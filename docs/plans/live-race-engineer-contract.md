@@ -1,32 +1,33 @@
 # Live race engineer integration contract
 
-Requirements: [plan](live-race-engineer.md). Owners: [UI](live-race-engineer-ui-plan.md), [backend](live-race-engineer-backend-plan.md). Items marked **Pending** wait on the user's decisions listed in the plan.
+Requirements: [plan](live-race-engineer.md). Owners: [UI](live-race-engineer-ui-plan.md), [backend](live-race-engineer-backend-plan.md). This reflects what is implemented on `feature/live-race-engineer`.
 
 ## Settings
 Existing GET/PUT `/api/settings` with partial-update merge. New fields, all required in complete settings and optional in partial requests:
 - `engineerEnabled`: boolean, default `false`.
 - `engineerMode`: `"quiet" | "normal" | "coach"`, default `"normal"`.
 - `engineerMicMode`: `"push-to-talk" | "open-mic" | "off"`, default `"push-to-talk"`.
-- `engineerPushToTalk`: `null | { kind: "keyboard"; key: string; modifiers: ("ctrl"|"alt"|"shift")[] } | { kind: "joystick"; deviceId: string; deviceName: string; button: number }`, default `null`. **Pending:** device support confirmed after hardware answer.
-- `engineerVoice`: `{ voiceURI: string | null; rate: number; pitch: number }`, default `{ voiceURI: null, rate: 1, pitch: 0.9 }`. `voiceURI: null` means the client picks the best en-GB male voice. Rate is 0.7–1.3 and pitch is 0.5–1.5.
+- `engineerPushToTalk`: `null | { kind: "keyboard"; vk: number; name: string } | { kind: "joystick"; deviceId: number; button: number; name: string }`, default `null`. Captured by `POST /api/engineer/bind`.
+- `engineerVoiceURI`: `string | null`, default `null` (the client picks the best en-GB male voice). `engineerVoiceRate`: 0.7–1.3, default 0.95. `engineerVoicePitch`: 0.5–1.5, default 0.85. `engineerRadioFilter`: boolean, default `true`.
 - `engineerProvider` / `engineerModel`: the `liveEngineer` AI feature's provider and model, same rules as the other AI features. The model defaults to `claude-haiku-5-5` when the provider is `anthropic`.
 
 Invalid values return the existing 400 settings error.
 
 ## WebSocket channel `engineer`
-The client subscribes with the existing subscription message shape: `{ type: "subscribe", channel: "engineer" }`.
+Events go to every connected client as notifications; the client forwards `engineer-*` messages to the radio widget.
 
 Server to client:
 - `{ type: "engineer-say", id: string, kind: "callout" | "answer" | "ack", priority: 0 | 1 | 2, text: string, createdAt: string }`. Priority 2 (critical) interrupts lower-priority speech; the others queue. Text has at most about 30 words.
+- `{ type: "engineer-heard", id: string, text: string, createdAt: string }`: a driver question as received.
 - `{ type: "engineer-state", enabled: boolean, mode: EngineerMode, live: boolean, thinking: boolean }`.
 - `{ type: "engineer-ptt", pressed: boolean, source: "keyboard" | "joystick" }`: global hotkey state from the backend helper.
 - `{ type: "engineer-error", code: "NO_PROVIDER" | "NO_LIVE_SESSION" | "AI_FAILED" | "INPUT_HELPER_FAILED", message: string }`.
 
-Client to server:
-- `{ type: "engineer-ask", id: string, text: string }`: a final transcript or typed question. The answer arrives as `engineer-say` with `kind: "answer"`.
-- `{ type: "engineer-speaking", speaking: boolean }`: lets the server hold proactive callouts while speech plays.
+Client to server: questions use `POST /api/engineer/ask` (below). The client queues speech itself and pauses open-mic recognition while it speaks.
 
 ## HTTP
+- GET `/api/engineer/state`: status plus the recent transcript.
+- POST `/api/engineer/ask`, body `{ text }`: returns `{ text }` (also spoken via `engineer-say`), or 502 `{ error, code }`.
 - GET `/api/engineer/input-devices`: `{ devices: { deviceId, deviceName, buttons }[] }` from the Windows helper. An empty list on other platforms.
 - POST `/api/engineer/bind`, body `{ kind: "keyboard" | "joystick" }`: waits up to 10 s for the next key or button press. Returns 200 with the binding, or 408. It does not save; the client saves the binding through `/api/settings`.
 - POST `/api/engineer/test`, body `{ text?: string }`: emits an `engineer-say` with `kind: "ack"` for voice preview over the real path.
