@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "Copiloto",
   "engineer_mode_codriver_desc": "Consejos antes de cada curva, según tu última vuelta.",
   "engineer_tip_lead": "Momento de los consejos: {value} s antes de frenar",
-  "engineer_tip_lead_help": "Los consejos terminan con esta antelación al punto de frenada a tu velocidad actual."
+  "engineer_tip_lead_help": "Los consejos terminan con esta antelación al punto de frenada a tu velocidad actual.",
+  "engineer_new_session": "Nueva sesión",
+  "engineer_new_session_confirm": "¿Empezar una nueva sesión? Se borra la radio y lo que recuerda el ingeniero.",
+  "engineer_session_practice": "Práctica",
+  "engineer_session_qualifying": "Clasificación",
+  "engineer_session_race": "Carrera",
+  "engineer_new_session_cancel": "Cancelar"
 }

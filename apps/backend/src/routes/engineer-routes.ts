@@ -14,6 +14,11 @@ export const engineerRoutes = new Hono()
     return "error" in result ? c.json(result, result.code === "EMPTY" ? 400 : 502) : c.json(result);
   })
 
+  .post("/api/engineer/new-session", zValidator("json", z.object({ type: z.enum(["practice", "qualifying", "race"]) }).strict()), (c) => {
+    engineerService.newSession(c.req.valid("json").type);
+    return c.json({ ok: true });
+  })
+
   .post("/api/engineer/test", zValidator("json", z.object({ text: z.string().max(200).optional() }).strict()), (c) => {
     const text = c.req.valid("json").text?.trim() || "Radio check. Loud and clear. Let's go racing.";
     engineerService.say({ key: "test", priority: 1, text }, "ack");

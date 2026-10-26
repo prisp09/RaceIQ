@@ -95,3 +95,28 @@ describe("race engineer coach calls", () => {
     }
   });
 });
+
+describe("race engineer new session", () => {
+  test("clears the radio, standing orders and lap memory, and tells the AI the session type", async () => {
+    const events: Record<string, unknown>[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { events.push(event); }) as typeof wsManager.broadcastNotification;
+    let system = "";
+    const service = new EngineerService(async (prompt) => { system = prompt; return "Copy."; });
+    try {
+      service.applyDirectives("Copy.\nINSTRUCTION: on brake-lockup");
+      service.say({ key: "test", priority: 1, text: "Radio check." }, "ack");
+      service.state.lapIssues = new Map([["brake-lockup", { count: 1, corners: new Map() }]]);
+      service.newSession("qualifying");
+      expect(service.transcript).toEqual([]);
+      expect(service.instructions.size).toBe(0);
+      expect(service.state.lapIssues.size).toBe(0);
+      expect(service.tips.size).toBe(0);
+      expect(events.at(-1)).toEqual({ type: "engineer-reset", sessionType: "qualifying" });
+      await service.ask("How am I doing?");
+      expect(system).toContain("Session: qualifying. One-lap pace");
+    } finally {
+      wsManager.broadcastNotification = original;
+    }
+  });
+});

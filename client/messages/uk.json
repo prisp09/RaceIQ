@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "Штурман",
   "engineer_mode_codriver_desc": "Поради перед кожним поворотом на основі останнього кола.",
   "engineer_tip_lead": "Час порад: за {value} с до гальмування",
-  "engineer_tip_lead_help": "Поради закінчуються за цей час до точки гальмування на поточній швидкості."
+  "engineer_tip_lead_help": "Поради закінчуються за цей час до точки гальмування на поточній швидкості.",
+  "engineer_new_session": "Нова сесія",
+  "engineer_new_session_confirm": "Почати нову сесію? Це очистить радіо та те, що пам'ятає інженер.",
+  "engineer_session_practice": "Тренування",
+  "engineer_session_qualifying": "Кваліфікація",
+  "engineer_session_race": "Гонка",
+  "engineer_new_session_cancel": "Скасувати"
 }

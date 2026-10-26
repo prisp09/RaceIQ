@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Mic, Radio, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, Mic, Radio, RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authenticatedFetch } from "@/lib/rpc";
@@ -12,6 +12,7 @@ import { WebSpeechToText, type SpeechToText } from "./speech-to-text";
 type Line = { id: string; from: "driver" | "engineer"; text: string };
 type EngineerEvent = { type: string } & Record<string, unknown>;
 type Mode = "quiet" | "normal" | "coach" | "co-driver";
+type SessionType = "practice" | "qualifying" | "race";
 
 const MAX_LINES = 8;
 
@@ -31,6 +32,8 @@ export function EngineerRadio() {
   const [live, setLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [confirmingNewSession, setConfirmingNewSession] = useState(false);
+  const [sessionType, setSessionType] = useState<SessionType | null>(null);
   const [micPermission, setMicPermission] = useState<"granted" | "prompt" | "denied" | "unknown">("unknown");
 
   useEffect(() => {
@@ -107,7 +110,8 @@ export function EngineerRadio() {
     let cancelled = false;
     void authenticatedFetch("/api/engineer/state").then(async (res) => {
       if (!res.ok || cancelled) return;
-      const state = await res.json() as { live: boolean; thinking: boolean; transcript: Line[] };
+      const state = await res.json() as { live: boolean; thinking: boolean; transcript: Line[]; sessionType: SessionType | null };
+      setSessionType(state.sessionType);
       setLive(state.live);
       setThinking(state.thinking);
       setLines(state.transcript.slice(-MAX_LINES));
@@ -124,6 +128,12 @@ export function EngineerRadio() {
         if (startedRef.current) speakerRef.current?.say(String(data.id), text, Number(data.priority) || 0);
       } else if (data.type === "engineer-heard") {
         addLine({ id: String(data.id), from: "driver", text: String(data.text ?? "") });
+      } else if (data.type === "engineer-reset") {
+        speakerRef.current?.stop();
+        setLines([]);
+        setInterim("");
+        setError(null);
+        setSessionType((data.sessionType as SessionType | undefined) ?? null);
       } else if (data.type === "engineer-state") {
         setThinking(Boolean(data.thinking));
         setLive(Boolean(data.live));
@@ -165,6 +175,17 @@ export function EngineerRadio() {
 
   const setMode = (next: Mode) => saveSettings.mutate({ engineerMode: next });
 
+  const startNewSession = async (type: SessionType) => {
+    setConfirmingNewSession(false);
+    try {
+      const res = await authenticatedFetch("/api/engineer/new-session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type }) });
+      if (!res.ok) setError(m.engineer_error_generic());
+    } catch {
+      setError(m.engineer_error_generic());
+    }
+  };
+  const sessionLabel = (type: SessionType) => type === "practice" ? m.engineer_session_practice() : type === "qualifying" ? m.engineer_session_qualifying() : m.engineer_session_race();
+
   const status = thinking ? m.engineer_status_thinking() : listening ? m.engineer_status_listening() : live ? m.engineer_status_live() : m.engineer_status_waiting();
   const binding = displaySettings.engineerPushToTalk?.name;
 
@@ -177,6 +198,9 @@ export function EngineerRadio() {
           <span className="truncate text-xs text-app-text-muted" aria-live="polite">{status}</span>
           <div className="ml-auto flex items-center gap-1">
             <EngineerModePicker id="engineer-radio-mode" value={mode} onChange={setMode} className="w-28" />
+            <Button variant="app-ghost" size="icon-sm" onClick={() => setConfirmingNewSession((value) => !value)} aria-label={m.engineer_new_session()} title={m.engineer_new_session()}>
+              <RotateCcw className="size-4" />
+            </Button>
             <Button variant="app-ghost" size="icon-sm" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? m.engineer_expand() : m.engineer_collapse()}>
               {collapsed ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             </Button>
@@ -190,6 +214,18 @@ export function EngineerRadio() {
                 {micPermission === "prompt" && <Button variant="app-outline" size="app-sm" onClick={() => void requestMic()}>{m.engineer_mic_permission_allow()}</Button>}
               </div>
             )}
+            {confirmingNewSession && (
+              <div role="group" aria-label={m.engineer_new_session()} className="flex flex-col gap-2 rounded border border-app-border-input p-2 text-xs">
+                <p className="text-app-text">{m.engineer_new_session_confirm()}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(["practice", "qualifying", "race"] as const).map((type) => (
+                    <Button key={type} variant="app-outline" size="app-sm" onClick={() => void startNewSession(type)}>{sessionLabel(type)}</Button>
+                  ))}
+                  <Button variant="app-ghost" size="app-sm" onClick={() => setConfirmingNewSession(false)}>{m.engineer_new_session_cancel()}</Button>
+                </div>
+              </div>
+            )}
+            {sessionType && !confirmingNewSession && <p className="text-app-caption uppercase tracking-wider text-app-text-muted">{sessionLabel(sessionType)}</p>}
             {!started && (
               <Button variant="app-primary" size="app-sm" onClick={start} className="w-full">
                 {m.engineer_start_radio()}

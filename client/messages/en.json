@@ -3028,5 +3028,11 @@
   "engineer_mode_codriver": "Co-driver",
   "engineer_mode_codriver_desc": "Turn-by-turn tips before each corner, based on your last lap.",
   "engineer_tip_lead": "Tip timing: {value} s before braking",
-  "engineer_tip_lead_help": "Tips finish this long before the braking point at your current speed."
+  "engineer_tip_lead_help": "Tips finish this long before the braking point at your current speed.",
+  "engineer_new_session": "New session",
+  "engineer_new_session_confirm": "Start a new session? This clears the radio log and what the engineer remembers.",
+  "engineer_session_practice": "Practice",
+  "engineer_session_qualifying": "Qualifying",
+  "engineer_session_race": "Race",
+  "engineer_new_session_cancel": "Cancel"
 }

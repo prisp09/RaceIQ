@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "Copiloto",
   "engineer_mode_codriver_desc": "Dicas antes de cada curva, com base na tua última volta.",
   "engineer_tip_lead": "Momento das dicas: {value} s antes da travagem",
-  "engineer_tip_lead_help": "As dicas terminam com esta antecedência do ponto de travagem à tua velocidade atual."
+  "engineer_tip_lead_help": "As dicas terminam com esta antecedência do ponto de travagem à tua velocidade atual.",
+  "engineer_new_session": "Nova sessão",
+  "engineer_new_session_confirm": "Começar uma nova sessão? Isto limpa o rádio e o que o engenheiro lembra.",
+  "engineer_session_practice": "Treino",
+  "engineer_session_qualifying": "Qualificação",
+  "engineer_session_race": "Corrida",
+  "engineer_new_session_cancel": "Cancelar"
 }

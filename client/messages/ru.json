@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "Штурман",
   "engineer_mode_codriver_desc": "Подсказки перед каждым поворотом по данным прошлого круга.",
   "engineer_tip_lead": "Время подсказок: за {value} с до торможения",
-  "engineer_tip_lead_help": "Подсказки заканчиваются за это время до точки торможения на текущей скорости."
+  "engineer_tip_lead_help": "Подсказки заканчиваются за это время до точки торможения на текущей скорости.",
+  "engineer_new_session": "Новая сессия",
+  "engineer_new_session_confirm": "Начать новую сессию? Это очистит радио и то, что помнит инженер.",
+  "engineer_session_practice": "Тренировка",
+  "engineer_session_qualifying": "Квалификация",
+  "engineer_session_race": "Гонка",
+  "engineer_new_session_cancel": "Отмена"
 }

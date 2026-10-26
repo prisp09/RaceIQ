@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "コ・ドライバー",
   "engineer_mode_codriver_desc": "前の周をもとに、各コーナーの手前でアドバイス。",
   "engineer_tip_lead": "アドバイスのタイミング: ブレーキの {value} 秒前",
-  "engineer_tip_lead_help": "現在の速度で、ブレーキングポイントのこの時間前に話し終えます。"
+  "engineer_tip_lead_help": "現在の速度で、ブレーキングポイントのこの時間前に話し終えます。",
+  "engineer_new_session": "新しいセッション",
+  "engineer_new_session_confirm": "新しいセッションを始めますか？無線ログとエンジニアの記憶を消去します。",
+  "engineer_session_practice": "練習",
+  "engineer_session_qualifying": "予選",
+  "engineer_session_race": "決勝",
+  "engineer_new_session_cancel": "キャンセル"
 }

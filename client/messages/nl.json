@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "Bijrijder",
   "engineer_mode_codriver_desc": "Tips vóór elke bocht, op basis van je vorige ronde.",
   "engineer_tip_lead": "Timing tips: {value} s voor het remmen",
-  "engineer_tip_lead_help": "Tips eindigen zo lang vóór het rempunt bij je huidige snelheid."
+  "engineer_tip_lead_help": "Tips eindigen zo lang vóór het rempunt bij je huidige snelheid.",
+  "engineer_new_session": "Nieuwe sessie",
+  "engineer_new_session_confirm": "Nieuwe sessie starten? Dit wist de radio en wat de engineer onthoudt.",
+  "engineer_session_practice": "Training",
+  "engineer_session_qualifying": "Kwalificatie",
+  "engineer_session_race": "Race",
+  "engineer_new_session_cancel": "Annuleren"
 }

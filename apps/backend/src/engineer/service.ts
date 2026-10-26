@@ -24,6 +24,14 @@ import { PushToTalkWatcher, type PushToTalkBinding } from "./input-helper";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 
+export type EngineerSessionType = "practice" | "qualifying" | "race";
+
+const SESSION_GUIDANCE: Record<EngineerSessionType, string> = {
+  practice: "Session: practice. Help the driver learn the track and car: try changes, build pace step by step.",
+  qualifying: "Session: qualifying. One-lap pace: push every corner, attack braking points, small risks are fine.",
+  race: "Session: race. Consistency first: protect tyres and fuel, avoid mistakes, steady lap times over hero laps.",
+};
+
 export type TranscriptEntry = { id: string; from: "driver" | "engineer"; text: string; at: string };
 export type EngineerSayKind = "callout" | "answer" | "ack";
 
@@ -83,6 +91,7 @@ export class EngineerService {
   private lastSaid = new Map<string, number>();
   private bestLap = 0;
   private sessionKey = "";
+  sessionType: EngineerSessionType | null = null;
   private lapsSinceStatus = 0;
   private thinking = false;
   private untap: (() => void) | null = null;
@@ -141,10 +150,34 @@ export class EngineerService {
     return this.settings.engineerMode;
   }
 
+  /** Clears the radio and everything the engineer remembers, for a fresh practice, qualifying or race. */
+  newSession(type: EngineerSessionType): void {
+    this.sessionType = type;
+    this.transcript.length = 0;
+    this.instructions.clear();
+    this.lastSaid.clear();
+    this.bestLap = 0;
+    this.lapsSinceStatus = 0;
+    this.state.lapIssues = new Map();
+    this.state.lastLapIssues = new Map();
+    this.coRecorder = null;
+    this.coLapNumber = -1;
+    this.tips.setTips([]);
+    this.lastLapCornerStats = [];
+    this.bestLapCornerStats = [];
+    wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
+  }
+
+  /** Prompt line describing the session type, if one was chosen. */
+  private sessionLine(): string {
+    return this.sessionType ? `\n${SESSION_GUIDANCE[this.sessionType]}` : "";
+  }
+
   status() {
     return {
       enabled: this.settings.engineerEnabled,
       mode: this.mode,
+      sessionType: this.sessionType,
       live: this.state.live,
       thinking: this.thinking,
       instructions: [...this.instructions],
@@ -176,7 +209,7 @@ export class EngineerService {
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
       ].filter(Boolean).join("\n\n");
-      const reply = this.applyDirectives(await this.generate(SYSTEM_PROMPT, prompt));
+      const reply = this.applyDirectives(await this.generate(SYSTEM_PROMPT + this.sessionLine(), prompt));
       this.say({ key: "answer", priority: 1, text: reply || "Say again, I didn't get that." }, "answer");
       return { text: reply };
     } catch (error) {
@@ -306,7 +339,7 @@ export class EngineerService {
     let raw = "";
     try {
       raw = await Promise.race([
-        this.generate(CO_DRIVER_PROMPT, `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`),
+        this.generate(CO_DRIVER_PROMPT + this.sessionLine(), `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`),
         new Promise<string>((resolve) => setTimeout(() => resolve(""), CO_DRIVER_TIMEOUT_MS)),
       ]);
     } catch {
@@ -336,7 +369,7 @@ export class EngineerService {
     let text = "";
     try {
       text = await Promise.race([
-        this.generate(brief ? `${COACH_PROMPT}\n- Co-driver tips cover individual corners, so keep this to ONE sentence under 15 words.` : COACH_PROMPT, `Lap data (JSON): ${JSON.stringify(context)}`),
+        this.generate(brief ? `${COACH_PROMPT}${this.sessionLine()}\n- Co-driver tips cover individual corners, so keep this to ONE sentence under 15 words.` : COACH_PROMPT + this.sessionLine(), `Lap data (JSON): ${JSON.stringify(context)}`),
         new Promise<string>((resolve) => setTimeout(() => resolve(""), COACH_TIMEOUT_MS)),
       ]);
     } catch {

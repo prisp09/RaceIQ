@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "副驾驶",
   "engineer_mode_codriver_desc": "根据上一圈，在每个弯前给出提示。",
   "engineer_tip_lead": "提示时机：刹车前 {value} 秒",
-  "engineer_tip_lead_help": "按当前车速，在刹车点之前这么久讲完提示。"
+  "engineer_tip_lead_help": "按当前车速，在刹车点之前这么久讲完提示。",
+  "engineer_new_session": "新赛段",
+  "engineer_new_session_confirm": "开始新赛段？这会清空无线电记录和工程师记住的内容。",
+  "engineer_session_practice": "练习",
+  "engineer_session_qualifying": "排位",
+  "engineer_session_race": "正赛",
+  "engineer_new_session_cancel": "取消"
 }

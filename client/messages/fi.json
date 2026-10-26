@@ -3025,5 +3025,11 @@
   "engineer_mode_codriver": "Kartturi",
   "engineer_mode_codriver_desc": "Vinkit ennen jokaista mutkaa edellisen kierroksen perusteella.",
   "engineer_tip_lead": "Vinkkien ajoitus: {value} s ennen jarrutusta",
-  "engineer_tip_lead_help": "Vinkit päättyvät näin paljon ennen jarrutuspistettä nykyisellä nopeudella."
+  "engineer_tip_lead_help": "Vinkit päättyvät näin paljon ennen jarrutuspistettä nykyisellä nopeudella.",
+  "engineer_new_session": "Uusi sessio",
+  "engineer_new_session_confirm": "Aloitetaanko uusi sessio? Radioloki ja insinöörin muisti tyhjennetään.",
+  "engineer_session_practice": "Harjoitus",
+  "engineer_session_qualifying": "Aika-ajo",
+  "engineer_session_race": "Kilpailu",
+  "engineer_new_session_cancel": "Peruuta"
 }

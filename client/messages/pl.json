@@ -3024,5 +3024,11 @@
   "engineer_mode_codriver": "Pilot",
   "engineer_mode_codriver_desc": "Wskazówki przed każdym zakrętem na podstawie ostatniego okrążenia.",
   "engineer_tip_lead": "Moment wskazówek: {value} s przed hamowaniem",
-  "engineer_tip_lead_help": "Wskazówki kończą się tyle przed punktem hamowania przy obecnej prędkości."
+  "engineer_tip_lead_help": "Wskazówki kończą się tyle przed punktem hamowania przy obecnej prędkości.",
+  "engineer_new_session": "Nowa sesja",
+  "engineer_new_session_confirm": "Rozpocząć nową sesję? To wyczyści radio i to, co pamięta inżynier.",
+  "engineer_session_practice": "Trening",
+  "engineer_session_qualifying": "Kwalifikacje",
+  "engineer_session_race": "Wyścig",
+  "engineer_new_session_cancel": "Anuluj"
 }

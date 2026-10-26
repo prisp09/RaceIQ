@@ -3025,5 +3025,11 @@
   "engineer_mode_codriver": "코드라이버",
   "engineer_mode_codriver_desc": "지난 랩을 바탕으로 코너마다 미리 팁을 줍니다.",
   "engineer_tip_lead": "팁 타이밍: 제동 {value}초 전",
-  "engineer_tip_lead_help": "현재 속도 기준으로 제동 지점보다 이만큼 먼저 말을 끝냅니다."
+  "engineer_tip_lead_help": "현재 속도 기준으로 제동 지점보다 이만큼 먼저 말을 끝냅니다.",
+  "engineer_new_session": "새 세션",
+  "engineer_new_session_confirm": "새 세션을 시작할까요? 무전 기록과 엔지니어가 기억하는 내용이 지워집니다.",
+  "engineer_session_practice": "연습",
+  "engineer_session_qualifying": "예선",
+  "engineer_session_race": "레이스",
+  "engineer_new_session_cancel": "취소"
 }
