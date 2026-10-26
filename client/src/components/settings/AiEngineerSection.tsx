@@ -23,6 +23,8 @@ type EngineerDraft = {
   engineerVoicePitch: number;
   engineerRadioFilter: boolean;
   engineerTipLeadSeconds: number;
+  engineerRadioFilterLevel: number;
+  engineerAzureRegion: string;
   engineerProvider: NonNullable<DisplaySettings["engineerProvider"]>;
   engineerModel: string;
 };
@@ -41,6 +43,8 @@ function draftFrom(settings: Partial<DisplaySettings>): EngineerDraft {
     engineerVoicePitch: settings.engineerVoicePitch ?? 0.85,
     engineerRadioFilter: settings.engineerRadioFilter ?? true,
     engineerTipLeadSeconds: settings.engineerTipLeadSeconds ?? 5,
+    engineerRadioFilterLevel: settings.engineerRadioFilterLevel ?? 0.5,
+    engineerAzureRegion: settings.engineerAzureRegion ?? "",
     engineerProvider: settings.engineerProvider ?? "",
     engineerModel: settings.engineerModel ?? "",
   };
@@ -59,6 +63,13 @@ export function AiEngineerSection() {
   }, [settingsLoaded, displaySettings]);
 
   const [binding, setBinding] = useState(false);
+  const [azureKey, setAzureKey] = useState("");
+  const [azureKeySet, setAzureKeySet] = useState(Boolean(displaySettings.azureSpeechKeySet));
+  useEffect(() => setAzureKeySet(Boolean(displaySettings.azureSpeechKeySet)), [displaySettings.azureSpeechKeySet]);
+  const saveAzureKey = async (value: string) => {
+    const res = await authenticatedFetch("/api/ai-key", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider: "azure-speech", apiKey: value.trim() }) }).catch(() => null);
+    if (res?.ok) { setAzureKeySet(value.trim() !== ""); setAzureKey(""); }
+  };
   const [bindError, setBindError] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => englishVoices());
   const speaker = useRef<EngineerSpeaker | null>(null);
@@ -130,7 +141,11 @@ export function AiEngineerSection() {
 
   const testVoice = () => {
     speaker.current ??= new EngineerSpeaker(() => {});
-    speaker.current.configure({ voiceURI: draft.engineerVoiceURI, rate: draft.engineerVoiceRate, pitch: draft.engineerVoicePitch, radioFilter: draft.engineerRadioFilter });
+    speaker.current.configure({
+      voiceURI: draft.engineerVoiceURI, rate: draft.engineerVoiceRate, pitch: draft.engineerVoicePitch,
+      radioFilter: draft.engineerRadioFilter, radioLevel: draft.engineerRadioFilterLevel,
+      azure: Boolean(azureKeySet && draft.engineerAzureRegion),
+    });
     speaker.current.unlock();
     speaker.current.stop();
     speaker.current.say("preview", m.engineer_voice_preview_line(), 1);
@@ -211,6 +226,30 @@ export function AiEngineerSection() {
               {m.engineer_radio_filter()}
             </label>
             <Button variant="app-outline" size="app-sm" onClick={testVoice}>{m.engineer_voice_test()}</Button>
+          </div>
+          {draft.engineerRadioFilter && (
+            <div className="max-w-xs">
+              <Label htmlFor="engineer-radio-level" className="mb-1 block text-xs text-app-text-muted">{m.engineer_radio_filter_level({ value: String(Math.round(draft.engineerRadioFilterLevel * 100)) })}</Label>
+              <input id="engineer-radio-level" type="range" min={0} max={1} step={0.05} value={draft.engineerRadioFilterLevel} onChange={(event) => updateSlider({ engineerRadioFilterLevel: Number(event.target.value) })} className="w-full accent-app-accent" />
+            </div>
+          )}
+          <div className="max-w-xl space-y-2 rounded border border-app-border-input p-3">
+            <p className="text-sm font-medium text-app-text">{m.engineer_azure_title()}</p>
+            <p className="text-xs text-app-text-muted">{m.engineer_azure_help()}</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="engineer-azure-key" className="mb-1 block text-xs text-app-text-muted">{m.engineer_azure_key()}</Label>
+                <div className="flex items-center gap-1.5">
+                  <input id="engineer-azure-key" type="password" autoComplete="new-password" value={azureKey} onChange={(event) => setAzureKey(event.target.value)} onBlur={() => { if (azureKey.trim()) void saveAzureKey(azureKey); }} placeholder={azureKeySet ? m.ai_key_stored_placeholder() : ""} className={selectClass + " font-mono"} />
+                  {azureKeySet && <Button variant="app-ghost" size="app-sm" onClick={() => void saveAzureKey("")}>{m.engineer_ptt_clear()}</Button>}
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="engineer-azure-region" className="mb-1 block text-xs text-app-text-muted">{m.engineer_azure_region()}</Label>
+                <input id="engineer-azure-region" value={draft.engineerAzureRegion} onChange={(event) => setDraft((current) => ({ ...current, engineerAzureRegion: event.target.value.trim().toLowerCase() }))} onBlur={(event) => update({ engineerAzureRegion: event.target.value.trim().toLowerCase().replace(/[^a-z0-9]/g, "") })} placeholder="westeurope" className={selectClass + " font-mono"} />
+              </div>
+            </div>
+            <p className="text-xs text-app-text-muted">{azureKeySet && draft.engineerAzureRegion ? m.engineer_azure_active() : m.engineer_azure_inactive()}</p>
           </div>
 
           <div className="grid max-w-xl gap-4 sm:grid-cols-2">

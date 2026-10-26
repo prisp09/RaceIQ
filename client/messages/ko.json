@@ -2994,7 +2994,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "무전 필터",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3031,5 +3031,12 @@
   "engineer_session_practice": "연습",
   "engineer_session_qualifying": "예선",
   "engineer_session_race": "레이스",
-  "engineer_new_session_cancel": "취소"
+  "engineer_new_session_cancel": "취소",
+  "engineer_radio_filter_level": "무전 필터 강도: {value}%",
+  "engineer_azure_title": "진짜 무전 음성 (선택, Azure Speech)",
+  "engineer_azure_help": "브라우저 음성에는 필터를 걸 수 없어서, 이 설정이 없으면 깨끗한 음성 주위에 잡음과 스켈치만 더해집니다. 본인의 Azure Speech 키를 쓰면 같은 Thomas (UK) 음성을 오디오로 받아 진짜 무전 필터를 거칩니다. 무료 등급은 월 50만 자입니다. 메시지 텍스트(내 목소리가 아님)가 Microsoft로 전송됩니다.",
+  "engineer_azure_key": "Azure Speech 키",
+  "engineer_azure_region": "Azure 지역",
+  "engineer_azure_active": "Azure Thomas (UK)와 전체 무전 필터 사용 중.",
+  "engineer_azure_inactive": "설정 안 됨: 브라우저 음성에 잡음과 스켈치 추가."
 }

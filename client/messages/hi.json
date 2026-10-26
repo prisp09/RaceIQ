@@ -2994,7 +2994,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "रेडियो फ़िल्टर",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3031,5 +3031,12 @@
   "engineer_session_practice": "प्रैक्टिस",
   "engineer_session_qualifying": "क्वालिफ़ाइंग",
   "engineer_session_race": "रेस",
-  "engineer_new_session_cancel": "रद्द करें"
+  "engineer_new_session_cancel": "रद्द करें",
+  "engineer_radio_filter_level": "रेडियो फ़िल्टर की तीव्रता: {value}%",
+  "engineer_azure_title": "असली रेडियो आवाज़ (वैकल्पिक, Azure Speech)",
+  "engineer_azure_help": "ब्राउज़र की आवाज़ों पर फ़िल्टर नहीं लगाया जा सकता, इसलिए इसके बिना रेडियो प्रभाव साफ़ आवाज़ के आसपास सिर्फ़ शोर और स्क्वेल्च होता है। अपनी Azure Speech कुंजी से RaceIQ वही Thomas (UK) आवाज़ ऑडियो के रूप में लेकर असली रेडियो फ़िल्टर से गुज़ारता है। मुफ़्त स्तर में हर महीने 5,00,000 अक्षर शामिल हैं। संदेश का टेक्स्ट (आपकी आवाज़ नहीं) Microsoft को भेजा जाता है।",
+  "engineer_azure_key": "Azure Speech कुंजी",
+  "engineer_azure_region": "Azure क्षेत्र",
+  "engineer_azure_active": "Azure Thomas (UK) पूरे रेडियो फ़िल्टर के साथ चालू है।",
+  "engineer_azure_inactive": "सेट नहीं: ब्राउज़र आवाज़ शोर और स्क्वेल्च के साथ।"
 }

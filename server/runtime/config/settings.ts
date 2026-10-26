@@ -55,6 +55,10 @@ const AppSettingsSchema = z.object({
   engineerVoiceRate: z.number().min(0.7).max(1.3).default(0.95),
   engineerVoicePitch: z.number().min(0.5).max(1.5).default(0.85),
   engineerRadioFilter: z.boolean().default(true),
+  // 0-1 strength of the radio effect (static/crackle, and the band-pass chain for Azure voices).
+  engineerRadioFilterLevel: z.number().min(0).max(1).default(0.5),
+  // Optional Azure Speech region (e.g. "westeurope") for en-GB-ThomasNeural audio; key lives in the keystore.
+  engineerAzureRegion: z.string().trim().max(40).regex(/^[a-z0-9]*$/).default(""),
   // Co-driver: corner tips finish this many seconds before the braking point.
   engineerTipLeadSeconds: z.number().min(2).max(10).default(5),
   engineerProvider: AiProviderSchema.default(""),

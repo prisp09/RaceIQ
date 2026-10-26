@@ -2993,7 +2993,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "无线电滤镜",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3030,5 +3030,12 @@
   "engineer_session_practice": "练习",
   "engineer_session_qualifying": "排位",
   "engineer_session_race": "正赛",
-  "engineer_new_session_cancel": "取消"
+  "engineer_new_session_cancel": "取消",
+  "engineer_radio_filter_level": "无线电滤镜强度：{value}%",
+  "engineer_azure_title": "真实无线电语音（可选，Azure Speech）",
+  "engineer_azure_help": "浏览器语音无法加滤镜，因此没有此项时，无线电效果只是在清晰语音周围加杂音和静噪。使用你自己的 Azure Speech 密钥后，RaceIQ 会以音频形式获取同样的 Thomas (UK) 语音，并通过真实的无线电滤镜。免费额度为每月 50 万字符。消息文字（不是你的声音）会发送给 Microsoft。",
+  "engineer_azure_key": "Azure Speech 密钥",
+  "engineer_azure_region": "Azure 区域",
+  "engineer_azure_active": "正在使用 Azure Thomas (UK) 和完整无线电滤镜。",
+  "engineer_azure_inactive": "未设置：使用浏览器语音加杂音和静噪。"
 }

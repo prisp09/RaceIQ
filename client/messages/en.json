@@ -2997,7 +2997,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "Radio filter",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3034,5 +3034,12 @@
   "engineer_session_practice": "Practice",
   "engineer_session_qualifying": "Qualifying",
   "engineer_session_race": "Race",
-  "engineer_new_session_cancel": "Cancel"
+  "engineer_new_session_cancel": "Cancel",
+  "engineer_radio_filter_level": "Radio filter strength: {value}%",
+  "engineer_azure_title": "True radio voice (optional, Azure Speech)",
+  "engineer_azure_help": "Browser voices can't be filtered, so without this the radio effect is static and squelch around a clean voice. With your own Azure Speech key, RaceIQ gets the same Thomas (UK) voice as audio and runs it through a real radio filter. The free tier covers 500,000 characters a month. Message text (not your voice) is sent to Microsoft.",
+  "engineer_azure_key": "Azure Speech key",
+  "engineer_azure_region": "Azure region",
+  "engineer_azure_active": "Using Azure Thomas (UK) with the full radio filter.",
+  "engineer_azure_inactive": "Not set: using the browser voice with static and squelch."
 }

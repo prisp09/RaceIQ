@@ -80,11 +80,13 @@ export const settingsRoutes = new Hono()
     let hasOpenaiKey = false;
     let hasAnthropicKey = false;
     let hasOpenAiCompatibleKey = false;
+    let hasAzureSpeechKey = false;
     if (shouldCheckCredentialStatus()) {
       hasGeminiKey = !!(await getSecret("gemini-api-key"));
       hasOpenaiKey = !!(await getSecret("openai-api-key"));
       hasAnthropicKey = !!(await getSecret("anthropic-api-key"));
       hasOpenAiCompatibleKey = !!(await getLocalApiKey());
+      hasAzureSpeechKey = !!(await getSecret("azure-speech-api-key"));
     }
     return c.json({
       ...settings,
@@ -94,6 +96,7 @@ export const settingsRoutes = new Hono()
       geminiApiKeySet: hasGeminiKey,
       openaiApiKeySet: hasOpenaiKey,
       anthropicApiKeySet: hasAnthropicKey,
+      azureSpeechKeySet: hasAzureSpeechKey,
       isCompiled: IS_COMPILED,
     });
   })
@@ -261,7 +264,7 @@ export const settingsRoutes = new Hono()
 
   // PUT /api/ai-key — store or clear an AI provider API key
   .put("/api/ai-key", zValidator("json", z.object({
-    provider: z.enum(["gemini", "openai", "openai-compatible", "anthropic", "local"]),
+    provider: z.enum(["gemini", "openai", "openai-compatible", "anthropic", "local", "azure-speech"]),
     apiKey: z.string().max(8192).refine((value) => !value.includes("\0")),
   }).strict()), async (c) => {
     const body = c.req.valid("json");

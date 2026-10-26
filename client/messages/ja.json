@@ -2993,7 +2993,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "無線フィルター",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3030,5 +3030,12 @@
   "engineer_session_practice": "練習",
   "engineer_session_qualifying": "予選",
   "engineer_session_race": "決勝",
-  "engineer_new_session_cancel": "キャンセル"
+  "engineer_new_session_cancel": "キャンセル",
+  "engineer_radio_filter_level": "無線フィルターの強さ: {value}%",
+  "engineer_azure_title": "本物の無線音声（任意、Azure Speech）",
+  "engineer_azure_help": "ブラウザーの音声にはフィルターをかけられないため、これがない場合はクリアな声の周りにノイズとスケルチを加えるだけになります。自分の Azure Speech キーを設定すると、同じ Thomas (UK) の声を音声データで取得し、本物の無線フィルターを通します。無料枠は月 50 万文字です。メッセージの文字（あなたの声ではありません）が Microsoft に送信されます。",
+  "engineer_azure_key": "Azure Speech キー",
+  "engineer_azure_region": "Azure リージョン",
+  "engineer_azure_active": "Azure Thomas (UK) と無線フィルターを使用中。",
+  "engineer_azure_inactive": "未設定: ブラウザーの声にノイズとスケルチを追加。"
 }

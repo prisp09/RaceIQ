@@ -3,6 +3,8 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { engineerService } from "../engineer/service";
 import { captureBinding, INPUT_HELPER_SUPPORTED, listInputDevices } from "../engineer/input-helper";
+import { synthesizeEngineerSpeech } from "../engineer/azure-tts";
+import { loadSettings } from "@raceiq/backend-core/runtime/config/settings";
 
 let bindInProgress = false;
 
@@ -17,6 +19,16 @@ export const engineerRoutes = new Hono()
   .post("/api/engineer/new-session", zValidator("json", z.object({ type: z.enum(["practice", "qualifying", "race"]) }).strict()), (c) => {
     engineerService.newSession(c.req.valid("json").type);
     return c.json({ ok: true });
+  })
+
+  .post("/api/engineer/tts", zValidator("json", z.object({ text: z.string().min(1).max(400) }).strict()), async (c) => {
+    const settings = loadSettings({ syncLaunchOnLogin: false });
+    try {
+      const audio = await synthesizeEngineerSpeech(settings.engineerAzureRegion, c.req.valid("json").text, settings.engineerVoiceRate, settings.engineerVoicePitch);
+      return c.body(audio, 200, { "content-type": "audio/mpeg", "cache-control": "no-store" });
+    } catch (error) {
+      return c.json({ code: "TTS_FAILED", error: error instanceof Error ? error.message : "Speech failed" }, 502);
+    }
   })
 
   .post("/api/engineer/test", zValidator("json", z.object({ text: z.string().max(200).optional() }).strict()), (c) => {

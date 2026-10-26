@@ -103,8 +103,10 @@ export function EngineerRadio() {
       rate: displaySettings.engineerVoiceRate ?? 0.95,
       pitch: displaySettings.engineerVoicePitch ?? 0.85,
       radioFilter: displaySettings.engineerRadioFilter ?? true,
+      radioLevel: displaySettings.engineerRadioFilterLevel ?? 0.5,
+      azure: Boolean(displaySettings.azureSpeechKeySet && displaySettings.engineerAzureRegion),
     });
-  }, [displaySettings.engineerVoiceURI, displaySettings.engineerVoiceRate, displaySettings.engineerVoicePitch, displaySettings.engineerRadioFilter]);
+  }, [displaySettings.engineerVoiceURI, displaySettings.engineerVoiceRate, displaySettings.engineerVoicePitch, displaySettings.engineerRadioFilter, displaySettings.engineerRadioFilterLevel, displaySettings.azureSpeechKeySet, displaySettings.engineerAzureRegion]);
 
   useEffect(() => {
     let cancelled = false;

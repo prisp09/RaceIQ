@@ -38,6 +38,10 @@ export interface DisplaySettings {
   engineerEnabled?: boolean;
   engineerMode?: "quiet" | "normal" | "coach" | "co-driver";
   engineerTipLeadSeconds?: number;
+  engineerRadioFilterLevel?: number;
+  engineerAzureRegion?: string;
+  /** Server-injected: whether an Azure Speech key is stored */
+  azureSpeechKeySet?: boolean;
   engineerMicMode?: "push-to-talk" | "open-mic" | "off";
   engineerPushToTalk?: { kind: "keyboard"; vk: number; name: string } | { kind: "joystick"; deviceId: number; button: number; name: string } | null;
   engineerVoiceURI?: string | null;

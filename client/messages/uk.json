@@ -2993,7 +2993,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "Радіофільтр",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3030,5 +3030,12 @@
   "engineer_session_practice": "Тренування",
   "engineer_session_qualifying": "Кваліфікація",
   "engineer_session_race": "Гонка",
-  "engineer_new_session_cancel": "Скасувати"
+  "engineer_new_session_cancel": "Скасувати",
+  "engineer_radio_filter_level": "Сила радіофільтра: {value}%",
+  "engineer_azure_title": "Справжній радіоголос (необов'язково, Azure Speech)",
+  "engineer_azure_help": "Голоси браузера не можна фільтрувати, тому без цього радіоефект — лише шум і сквелч навколо чистого голосу. З власним ключем Azure Speech RaceIQ отримує той самий голос Thomas (UK) як аудіо й пропускає його через справжній радіофільтр. Безкоштовний тариф — 500 000 символів на місяць. Текст повідомлень (не ваш голос) надсилається в Microsoft.",
+  "engineer_azure_key": "Ключ Azure Speech",
+  "engineer_azure_region": "Регіон Azure",
+  "engineer_azure_active": "Використовується Azure Thomas (UK) з повним радіофільтром.",
+  "engineer_azure_inactive": "Не налаштовано: голос браузера з шумом і сквелчем."
 }

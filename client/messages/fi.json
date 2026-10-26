@@ -2994,7 +2994,7 @@
   "engineer_voice_no_british": "No British English voice is installed. Open RaceIQ in Microsoft Edge for the natural UK voices.",
   "engineer_voice_rate": "Speed {value}",
   "engineer_voice_pitch": "Pitch {value}",
-  "engineer_radio_filter": "Radio squelch",
+  "engineer_radio_filter": "Radiosuodatin",
   "engineer_voice_test": "Test voice",
   "engineer_voice_preview_line": "Radio check. Loud and clear. Let's go racing.",
   "engineer_provider_label": "Engineer AI provider",
@@ -3031,5 +3031,12 @@
   "engineer_session_practice": "Harjoitus",
   "engineer_session_qualifying": "Aika-ajo",
   "engineer_session_race": "Kilpailu",
-  "engineer_new_session_cancel": "Peruuta"
+  "engineer_new_session_cancel": "Peruuta",
+  "engineer_radio_filter_level": "Radiosuotimen voimakkuus: {value} %",
+  "engineer_azure_title": "Aito radioääni (valinnainen, Azure Speech)",
+  "engineer_azure_help": "Selaimen ääniä ei voi suodattaa, joten ilman tätä radioefekti on vain kohinaa ja squelchia selkeän äänen ympärillä. Omalla Azure Speech -avaimella RaceIQ saa saman Thomas (UK) -äänen äänitiedostona ja ajaa sen aidon radiosuotimen läpi. Ilmaistaso kattaa 500 000 merkkiä kuukaudessa. Viestien teksti (ei äänesi) lähetetään Microsoftille.",
+  "engineer_azure_key": "Azure Speech -avain",
+  "engineer_azure_region": "Azure-alue",
+  "engineer_azure_active": "Azure Thomas (UK) ja täysi radiosuodatin käytössä.",
+  "engineer_azure_inactive": "Ei asetettu: selaimen ääni kohinan ja squelchin kanssa."
 }
