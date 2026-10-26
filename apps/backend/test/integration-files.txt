@@ -48,6 +48,7 @@ apps/backend/test/driver-profile/runner.test.ts
 apps/backend/test/driver-profile/runs.test.ts
 apps/backend/test/driver-profile/style.test.ts
 apps/backend/test/driver-profile/trend-provenance.test.ts
+apps/backend/test/engineer/dossier.test.ts
 apps/backend/test/engineer/service-directives.test.ts
 apps/backend/test/experiments/arms/auto-exclude.test.ts
 apps/backend/test/experiments/arms/curation.test.ts

@@ -10,6 +10,9 @@ import { addLiveTelemetryTap } from "@raceiq/backend-core/live-engineer/tap";
 import { loadSettings, saveSettings, type AppSettings } from "@raceiq/backend-core/runtime/config/settings";
 import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
 import { resolveAi } from "../ai/ai-runtime";
+import { getAiProviderApiKey } from "@raceiq/backend-core/ai/openai-compatible-provider";
+import { generateWithClaude } from "./claude-native";
+import { buildDriverDossier } from "./dossier";
 import { EngineerLiveState, type IssueEvent } from "./state";
 import {
   INSTRUCTION_KINDS,
@@ -75,11 +78,26 @@ const CO_DRIVER_SETTLE_MS = 300;
 /** Coach debriefs are skipped if Claude takes longer than this. */
 export const COACH_TIMEOUT_MS = 4000;
 
-export type EngineerGenerate = (system: string, prompt: string) => Promise<string>;
+/** `stablePrefix` (the driver dossier) is identical for every call in a session, so it can be cached. */
+export type EngineerGenerate = (system: string, prompt: string, stablePrefix?: string) => Promise<string>;
 
-const defaultGenerate: EngineerGenerate = async (system, prompt) => {
+const defaultGenerate: EngineerGenerate = async (system, prompt, stablePrefix = "") => {
+  // Same provider/model resolution as the liveEngineer AI feature (falls back to AI Chat).
+  const settings = loadSettings({ syncLaunchOnLogin: false });
+  const provider = settings.engineerProvider || settings.chatProvider;
+  const model = (settings.engineerModel || settings.chatModel).trim() || "claude-haiku-5-5";
+  if (provider === "anthropic") {
+    const apiKey = await getAiProviderApiKey("anthropic");
+    if (apiKey) {
+      try {
+        return (await generateWithClaude({ apiKey, model, stablePrefix, instructions: system, prompt, maxTokens: ENGINEER_MAX_OUTPUT_TOKENS })).text;
+      } catch (error) {
+        console.warn("[Engineer] Native Claude call failed; using the compatibility path:", error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
   const ai = await resolveAi("liveEngineer");
-  const result = await ai.generateText({ system, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
+  const result = await ai.generateText({ system: stablePrefix ? `${stablePrefix}\n\n${system}` : system, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
   return String(result.analysis ?? "");
 };
 
@@ -106,6 +124,8 @@ export class EngineerService {
   private coLapNumber = -1;
   private coLastTick = 0;
   lastLapCornerStats: CornerGroupStats[] = [];
+  private dossier = "";
+  private dossierKey = "";
   bestLapCornerStats: CornerGroupStats[] = [];
 
   constructor(generate: EngineerGenerate = defaultGenerate) {
@@ -165,7 +185,24 @@ export class EngineerService {
     this.tips.setTips([]);
     this.lastLapCornerStats = [];
     this.bestLapCornerStats = [];
+    this.dossierKey = "";
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
+  }
+
+  /** The driver dossier for the current game/car/track/session; rebuilt only when those change. */
+  async driverDossier(): Promise<string> {
+    const packet = this.state.packet;
+    if (!packet) return this.dossier;
+    const groups = this.coGroups.length > 0 ? this.coGroups : groupCorners(this.state.cornerSegments, this.state.trackLength);
+    const key = `${packet.gameId}|${packet.carId}|${packet.trackId}|${this.sessionType ?? ""}|${groups.length}`;
+    if (key === this.dossierKey) return this.dossier;
+    try {
+      this.dossier = await buildDriverDossier({ gameId: packet.gameId, carId: packet.carId || null, trackId: packet.trackId || null }, groups);
+      this.dossierKey = key;
+    } catch (error) {
+      console.warn("[Engineer] Could not build the driver dossier:", error instanceof Error ? error.message : String(error));
+    }
+    return this.dossier;
   }
 
   /** Prompt line describing the session type, if one was chosen. */
@@ -209,7 +246,7 @@ export class EngineerService {
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
       ].filter(Boolean).join("\n\n");
-      const reply = this.applyDirectives(await this.generate(SYSTEM_PROMPT + this.sessionLine(), prompt));
+      const reply = this.applyDirectives(await this.generate(SYSTEM_PROMPT + this.sessionLine(), prompt, await this.driverDossier()));
       this.say({ key: "answer", priority: 1, text: reply || "Say again, I didn't get that." }, "answer");
       return { text: reply };
     } catch (error) {
@@ -339,7 +376,7 @@ export class EngineerService {
     let raw = "";
     try {
       raw = await Promise.race([
-        this.generate(CO_DRIVER_PROMPT + this.sessionLine(), `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`),
+        this.generate(CO_DRIVER_PROMPT + this.sessionLine(), `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`, await this.driverDossier()),
         new Promise<string>((resolve) => setTimeout(() => resolve(""), CO_DRIVER_TIMEOUT_MS)),
       ]);
     } catch {
@@ -369,7 +406,7 @@ export class EngineerService {
     let text = "";
     try {
       text = await Promise.race([
-        this.generate(brief ? `${COACH_PROMPT}${this.sessionLine()}\n- Co-driver tips cover individual corners, so keep this to ONE sentence under 15 words.` : COACH_PROMPT + this.sessionLine(), `Lap data (JSON): ${JSON.stringify(context)}`),
+        this.generate(brief ? `${COACH_PROMPT}${this.sessionLine()}\n- Co-driver tips cover individual corners, so keep this to ONE sentence under 15 words.` : COACH_PROMPT + this.sessionLine(), `Lap data (JSON): ${JSON.stringify(context)}`, await this.driverDossier()),
         new Promise<string>((resolve) => setTimeout(() => resolve(""), COACH_TIMEOUT_MS)),
       ]);
     } catch {
