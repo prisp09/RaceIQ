@@ -2970,9 +2970,9 @@
   "engineer_mode_quiet": "Quiet",
   "engineer_mode_normal": "Normal",
   "engineer_mode_coach": "Coach",
-  "engineer_mode_quiet_desc": "Quiet: answers and critical calls only",
-  "engineer_mode_normal_desc": "Normal: lap summaries and status",
-  "engineer_mode_coach_desc": "Coach: adds mistake notes each lap",
+  "engineer_mode_quiet_desc": "Critical calls only: fuel and tyres. Answers when you ask.",
+  "engineer_mode_normal_desc": "Adds lap times, purple laps and a status every 5 laps. No AI.",
+  "engineer_mode_coach_desc": "A short AI debrief after every lap with what to improve.",
   "engineer_mic_label": "Microphone",
   "engineer_mic_ptt": "Push to talk",
   "engineer_mic_open": "Open mic",
@@ -3016,5 +3016,6 @@
   "engineer_collapse": "Collapse engineer radio",
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
-  "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload."
+  "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
+  "engineer_mode_uses_ai_tokens": "Uses AI tokens"
 }

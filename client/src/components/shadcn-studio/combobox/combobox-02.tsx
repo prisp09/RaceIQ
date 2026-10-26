@@ -23,6 +23,8 @@ export interface Combobox02Option {
   disabled?: boolean;
   /** Short tag shown after the label in the list, e.g. "Recommended". */
   badge?: string;
+  /** Secondary line shown under the label in the list. */
+  description?: string;
 }
 
 export interface Combobox02Props {
@@ -36,6 +38,8 @@ export interface Combobox02Props {
   className?: string;
   fallbackLabel?: string;
   popupHeader?: ReactNode;
+  /** Tooltip for the closed control. */
+  title?: string;
 }
 
 interface OptionGroup {
@@ -68,6 +72,7 @@ export function Combobox02({
   className = "w-full max-w-xs",
   fallbackLabel,
   popupHeader,
+  title,
 }: Combobox02Props) {
   const [open, setOpen] = useState(false);
   const optionsWithFallback = useMemo(() => {
@@ -95,6 +100,7 @@ export function Combobox02({
     >
       <ComboboxInput
         id={id}
+        title={title}
         aria-label={ariaLabel ?? placeholder}
         placeholder={placeholder}
         disabled={disabled}
@@ -128,12 +134,17 @@ export function Combobox02({
                     disabled={option.disabled}
                     className="min-h-8 whitespace-normal px-3 py-1.5 leading-snug"
                   >
-                    {option.badge ? (
-                      <span className="flex items-center gap-2">
-                        <span>{option.label}</span>
-                        <span className="shrink-0 rounded border border-status-success/40 px-1.5 py-0.5 text-app-caption uppercase tracking-wider text-status-success">
-                          {option.badge}
+                    {option.badge || option.description ? (
+                      <span className="flex flex-col gap-0.5">
+                        <span className="flex items-center gap-2">
+                          <span>{option.label}</span>
+                          {option.badge && (
+                            <span className="shrink-0 rounded border border-status-success/40 px-1.5 py-0.5 text-app-caption uppercase tracking-wider text-status-success">
+                              {option.badge}
+                            </span>
+                          )}
                         </span>
+                        {option.description && <span className="text-app-caption text-app-text-muted">{option.description}</span>}
                       </span>
                     ) : option.label}
                   </ComboboxItem>

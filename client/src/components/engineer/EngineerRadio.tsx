@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { authenticatedFetch } from "@/lib/rpc";
 import { useSaveSettings, useSettings } from "@/hooks/settings";
 import { m } from "@/paraglide/messages";
+import { EngineerModePicker } from "./EngineerModePicker";
 import { EngineerSpeaker } from "./engineer-voice";
 import { WebSpeechToText, type SpeechToText } from "./speech-to-text";
 
@@ -175,16 +176,7 @@ export function EngineerRadio() {
           <span className="text-sm font-semibold">{m.engineer_title()}</span>
           <span className="truncate text-xs text-app-text-muted" aria-live="polite">{status}</span>
           <div className="ml-auto flex items-center gap-1">
-            <select
-              aria-label={m.engineer_mode_label()}
-              value={mode}
-              onChange={(event) => setMode(event.target.value as Mode)}
-              className="rounded border border-app-border-input bg-app-surface px-1.5 py-0.5 text-xs text-app-text"
-            >
-              <option value="quiet">{m.engineer_mode_quiet()}</option>
-              <option value="normal">{m.engineer_mode_normal()}</option>
-              <option value="coach">{m.engineer_mode_coach()}</option>
-            </select>
+            <EngineerModePicker id="engineer-radio-mode" value={mode} onChange={setMode} className="w-28" />
             <Button variant="app-ghost" size="icon-sm" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? m.engineer_expand() : m.engineer_collapse()}>
               {collapsed ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             </Button>

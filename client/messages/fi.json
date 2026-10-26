@@ -2964,12 +2964,12 @@
   "engineer_settings_desc": "A radio engineer that calls out laps, fuel, tyres and mistakes during live sessions and answers your questions. Replies are spoken in your browser; keep the RaceIQ tab open while you drive.",
   "engineer_enable": "Enable live race engineer",
   "engineer_mode_label": "Radio mode",
-  "engineer_mode_quiet": "Quiet",
-  "engineer_mode_normal": "Normal",
-  "engineer_mode_coach": "Coach",
-  "engineer_mode_quiet_desc": "Quiet: answers and critical calls only",
-  "engineer_mode_normal_desc": "Normal: lap summaries and status",
-  "engineer_mode_coach_desc": "Coach: adds mistake notes each lap",
+  "engineer_mode_quiet": "Hiljainen",
+  "engineer_mode_normal": "Normaali",
+  "engineer_mode_coach": "Valmentaja",
+  "engineer_mode_quiet_desc": "Vain kriittiset ilmoitukset: polttoaine ja renkaat. Vastaa kysyttäessä.",
+  "engineer_mode_normal_desc": "Lisää kierrosajat, parhaat kierrokset ja tilannekatsauksen 5 kierroksen välein. Ei tekoälyä.",
+  "engineer_mode_coach_desc": "Lyhyt tekoälyn palaute jokaisen kierroksen jälkeen: mitä parantaa.",
   "engineer_mic_label": "Microphone",
   "engineer_mic_ptt": "Push to talk",
   "engineer_mic_open": "Open mic",
@@ -3013,5 +3013,6 @@
   "engineer_collapse": "Collapse engineer radio",
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
-  "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload."
+  "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
+  "engineer_mode_uses_ai_tokens": "Käyttää tekoälytokeneita"
 }

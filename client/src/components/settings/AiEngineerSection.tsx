@@ -6,6 +6,7 @@ import { authenticatedFetch } from "@/lib/rpc";
 import { useSaveSettings, useSettings } from "@/hooks/settings";
 import type { DisplaySettings } from "@/stores/telemetry";
 import { m } from "@/paraglide/messages";
+import { EngineerModePicker } from "@/components/engineer/EngineerModePicker";
 import { EngineerSpeaker, englishVoices, pickVoice } from "@/components/engineer/engineer-voice";
 import { AiModelPicker } from "./AiPickers";
 import { defaultModelForProvider, modelsOrFallback } from "./recommended-model";
@@ -148,11 +149,7 @@ export function AiEngineerSection() {
           <div className="grid max-w-xl gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="engineer-mode" className="mb-1 block text-xs text-app-text-muted">{m.engineer_mode_label()}</Label>
-              <select id="engineer-mode" className={selectClass} value={draft.engineerMode} onChange={(event) => update({ engineerMode: event.target.value as EngineerDraft["engineerMode"] })}>
-                <option value="quiet">{m.engineer_mode_quiet_desc()}</option>
-                <option value="normal">{m.engineer_mode_normal_desc()}</option>
-                <option value="coach">{m.engineer_mode_coach_desc()}</option>
-              </select>
+              <EngineerModePicker id="engineer-mode" value={draft.engineerMode} onChange={(mode) => update({ engineerMode: mode })} />
             </div>
             <div>
               <Label htmlFor="engineer-mic" className="mb-1 block text-xs text-app-text-muted">{m.engineer_mic_label()}</Label>
