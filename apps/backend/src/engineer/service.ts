@@ -41,14 +41,15 @@ Rules:
 - If the driver asks you to start or stop calling something out repeatedly, add a last line exactly "INSTRUCTION: on <kind>" or "INSTRUCTION: off <kind>". Kinds: brake-lockup (lock-ups), understeer, oversteer, bottoming, sector-delta (sector splits), lap-delta (lap times).
 - If the driver asks you to talk more or less, add a last line exactly "MODE: quiet", "MODE: normal" or "MODE: coach".`;
 
-const COACH_PROMPT = `You are the driver's race engineer on team radio, British and calm, like a Formula 1 race engineer. After each lap you give ONE short, actionable improvement for the next lap.
+const COACH_PROMPT = `You are the driver's race engineer on team radio, British and calm, like a Formula 1 race engineer. After each lap you give a short debrief for the next lap.
 Rules:
-- One or two short sentences, under 30 words. No lists, no markdown, no numbers unless essential.
-- Focus on the single biggest incremental gain: name the corner and what to change (braking point, entry speed, throttle timing, line, kerbs).
-- Coach, don't report stats. Example: "Brake a touch earlier into Turn 2, you're running wide on exit."
-- Use only the lap data given. If there are no mistakes, encourage them to keep the rhythm and push in their weakest sector.`;
+- Two or three short sentences, under 40 words. No lists, no markdown.
+- Start with the lap time against their best in a few words (e.g. "1:42.3, two tenths off.", "Purple lap, mate."). Say "lap invalidated" if it was invalid.
+- Then one or two incremental improvements: name the corner and what to change (braking point, entry speed, throttle timing, line, kerbs). Coach, don't list stats.
+- Radio style: "mate", "copy", "push now" where they fit. Example: "1:42.3, two tenths off. Brake a touch earlier into Turn 2, you're running wide on exit."
+- Use only the lap data given. If there are no mistakes, tell them to keep the rhythm and push in their weakest sector.`;
 
-/** Coach calls wait this long for Claude before using the template line. */
+/** Coach debriefs are skipped if Claude takes longer than this. */
 export const COACH_TIMEOUT_MS = 4000;
 
 export type EngineerGenerate = (system: string, prompt: string) => Promise<string>;
@@ -201,33 +202,39 @@ export class EngineerService {
       this.lapsSinceStatus = 0;
     }
     const isValid = event.isValid !== false;
+    const previousBest = this.bestLap;
     this.lapsSinceStatus++;
     const mode = this.mode === "quiet" && this.instructions.has("lap-delta") ? "normal" : this.mode;
     const calls = lapCompleteCallouts(mode, {
       lapNumber: Number(event.lapNumber) || 0,
       lapTime,
       isValid,
-      previousBest: this.bestLap,
+      previousBest,
       pit: this.state.pit,
       lastLapIssues: this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues,
       lapsSinceStatus: this.lapsSinceStatus,
     });
     if (calls.some((call) => call.key === "status")) this.lapsSinceStatus = 0;
     if (isValid && (this.bestLap <= 0 || lapTime < this.bestLap)) this.bestLap = lapTime;
-    const coachTemplate = calls.find((call) => call.key === "coach-lap");
-    for (const call of calls) if (call !== coachTemplate) this.say(call);
-    if (mode === "coach") void this.coachLap(coachTemplate, { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid });
+    if (mode !== "coach") {
+      for (const call of calls) this.say(call);
+      return;
+    }
+    // Coach: critical calls stay instant; the Claude debrief replaces every other after-lap call.
+    for (const call of calls) if (call.priority === 2) this.say(call);
+    void this.coachLap({ lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest });
   }
 
-  /** Coach mode: one Claude-written improvement for the next lap, falling back to the template line. */
-  async coachLap(fallback: Callout | undefined, lap: { lapNumber: number; lapTime: number; isValid: boolean }): Promise<void> {
+  /** Coach mode: a Claude-written lap debrief. Says nothing if Claude fails or is too slow. */
+  async coachLap(lap: { lapNumber: number; lapTime: number; isValid: boolean; previousBest: number }): Promise<void> {
     const issues = this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues;
     const sectors = this.state.sectors;
     const context = {
       lap: lap.lapNumber,
       lapTimeS: Number(lap.lapTime.toFixed(3)),
       valid: lap.isValid,
-      bestLapS: this.bestLap > 0 ? Number(this.bestLap.toFixed(3)) : null,
+      previousBestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null,
+      personalBest: lap.isValid && (lap.previousBest <= 0 || lap.lapTime < lap.previousBest),
       sectorDeltasToBestS: sectors?.lastTimes.map((time, index) => {
         const best = sectors.bestTimes[index];
         return time > 0 && Number.isFinite(best) && best > 0 ? Number((time - best).toFixed(2)) : null;
@@ -244,8 +251,7 @@ export class EngineerService {
       text = "";
     }
     const reply = text.replace(/\s+/g, " ").trim();
-    if (reply) this.say({ key: "coach-lap", priority: 0, text: reply });
-    else if (fallback) this.say(fallback);
+    if (reply) this.say({ key: "coach-lap", priority: 1, text: reply });
   }
 
   private onIssue(event: IssueEvent): void {

@@ -48,30 +48,50 @@ describe("race engineer coach calls", () => {
     wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
     return { said, restore: () => { wsManager.broadcastNotification = original; } };
   };
-  const fallback = { key: "coach-lap", priority: 0 as const, text: "Lock-up into Turn 1. Ease the initial brake pressure." };
+  const lap = { lapNumber: 3, lapTime: 102.34, isValid: true, previousBest: 102.1 };
 
-  test("speaks Claude's improvement and sends it the lap's mistakes by corner", async () => {
+  test("speaks Claude's debrief and sends it the lap's mistakes by corner", async () => {
     const { said, restore } = capture();
     let prompt = "";
-    const service = new EngineerService(async (_system, lapPrompt) => { prompt = lapPrompt; return "Brake a touch earlier into Turn 1, you're running wide on exit."; });
+    const service = new EngineerService(async (_system, lapPrompt) => { prompt = lapPrompt; return "1:42.3, two tenths off. Brake a touch earlier into Turn 1, you're running wide on exit."; });
     service.state.lastLapIssues = new Map([["brake-lockup", { count: 2, corners: new Map([["Turn 1", 2]]) }]]);
     try {
-      await service.coachLap(fallback, { lapNumber: 3, lapTime: 102.34, isValid: true });
-      expect(said).toEqual(["Brake a touch earlier into Turn 1, you're running wide on exit."]);
+      await service.coachLap(lap);
+      expect(said).toEqual(["1:42.3, two tenths off. Brake a touch earlier into Turn 1, you're running wide on exit."]);
       expect(prompt).toContain('"mistakesByCorner":{"brake-lockup":{"Turn 1":2}}');
+      expect(prompt).toContain('"previousBestLapS":102.1');
     } finally {
       restore();
     }
   });
 
-  test("falls back to the template line when Claude fails", async () => {
+  test("says nothing when Claude fails", async () => {
     const { said, restore } = capture();
     const service = new EngineerService(async () => { throw new Error("AI_FAILED"); });
     try {
-      await service.coachLap(fallback, { lapNumber: 3, lapTime: 102.34, isValid: true });
-      expect(said).toEqual([fallback.text]);
+      await service.coachLap(lap);
+      expect(said).toEqual([]);
     } finally {
       restore();
+    }
+  });
+
+  test("coach mode skips the lap-summary template and keeps critical calls", async () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "coach" });
+    const { said, restore } = capture();
+    let asked = 0;
+    const service = new EngineerService(async () => { asked++; return ""; });
+    service.state.pit = { fuelPerLap: 2.5, fuelLapsRemaining: 1.2, tireLapsToCritical: 20 } as never;
+    try {
+      service.start();
+      emitLiveNotification({ type: "lap-saved", sessionId: 7, lapNumber: 1, lapTime: 102.34, isValid: true });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(said).toEqual(["Box, box. Fuel is critical, about 1.2 laps left."]);
+      expect(asked).toBe(1);
+    } finally {
+      service.stop();
+      restore();
+      saveSettings({ ...loadSettings(), engineerMode: "normal" });
     }
   });
 });
