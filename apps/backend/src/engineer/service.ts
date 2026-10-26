@@ -37,9 +37,27 @@ Rules:
 - Reply in at most two short sentences, under 35 words. No lists, no markdown, no emojis.
 - Use only the live data provided. If something isn't in the data, say you don't have it.
 - Write lap times as 1:42.3 and deltas as "plus 0.4" or "minus 0.2". Round numbers for speech.
-- Address the driver as "you". Radio style is fine ("Copy.", "Understood.").
+- Address the driver as "you" or "mate". Use real radio phrasing where it fits: "Copy.", "Understood.", "Push now.", "Box, box." (only when they should pit).
 - If the driver asks you to start or stop calling something out repeatedly, add a last line exactly "INSTRUCTION: on <kind>" or "INSTRUCTION: off <kind>". Kinds: brake-lockup (lock-ups), understeer, oversteer, bottoming, sector-delta (sector splits), lap-delta (lap times).
 - If the driver asks you to talk more or less, add a last line exactly "MODE: quiet", "MODE: normal" or "MODE: coach".`;
+
+const COACH_PROMPT = `You are the driver's race engineer on team radio, British and calm, like a Formula 1 race engineer. After each lap you give ONE short, actionable improvement for the next lap.
+Rules:
+- One or two short sentences, under 30 words. No lists, no markdown, no numbers unless essential.
+- Focus on the single biggest incremental gain: name the corner and what to change (braking point, entry speed, throttle timing, line, kerbs).
+- Coach, don't report stats. Example: "Brake a touch earlier into Turn 2, you're running wide on exit."
+- Use only the lap data given. If there are no mistakes, encourage them to keep the rhythm and push in their weakest sector.`;
+
+/** Coach calls wait this long for Claude before using the template line. */
+export const COACH_TIMEOUT_MS = 4000;
+
+export type EngineerGenerate = (system: string, prompt: string) => Promise<string>;
+
+const defaultGenerate: EngineerGenerate = async (system, prompt) => {
+  const ai = await resolveAi("liveEngineer");
+  const result = await ai.generateText({ system, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
+  return String(result.analysis ?? "");
+};
 
 export class EngineerService {
   readonly state: EngineerLiveState;
@@ -55,7 +73,10 @@ export class EngineerService {
   private settingsTimer: ReturnType<typeof setInterval> | null = null;
   private readonly ptt: PushToTalkWatcher;
 
-  constructor() {
+  private readonly generate: EngineerGenerate;
+
+  constructor(generate: EngineerGenerate = defaultGenerate) {
+    this.generate = generate;
     this.state = new EngineerLiveState((event) => this.onIssue(event), (sector, sectors) => this.onSector(sector, sectors));
     this.ptt = new PushToTalkWatcher(
       (pressed) => wsManager.broadcastNotification({ type: "engineer-ptt", pressed }),
@@ -118,7 +139,6 @@ export class EngineerService {
     this.record("driver", text);
     this.setThinking(true);
     try {
-      const ai = await resolveAi("liveEngineer");
       const recent = this.transcript.slice(-8, -1).map((entry) => `${entry.from === "driver" ? "Driver" : "Engineer"}: ${entry.text}`).join("\n");
       const prompt = [
         `Live data (JSON): ${JSON.stringify(this.state.snapshot())}`,
@@ -126,8 +146,7 @@ export class EngineerService {
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
       ].filter(Boolean).join("\n\n");
-      const result = await ai.generateText({ system: SYSTEM_PROMPT, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
-      const reply = this.applyDirectives(String(result.analysis ?? ""));
+      const reply = this.applyDirectives(await this.generate(SYSTEM_PROMPT, prompt));
       this.say({ key: "answer", priority: 1, text: reply || "Say again, I didn't get that." }, "answer");
       return { text: reply };
     } catch (error) {
@@ -195,7 +214,38 @@ export class EngineerService {
     });
     if (calls.some((call) => call.key === "status")) this.lapsSinceStatus = 0;
     if (isValid && (this.bestLap <= 0 || lapTime < this.bestLap)) this.bestLap = lapTime;
-    for (const call of calls) this.say(call);
+    const coachTemplate = calls.find((call) => call.key === "coach-lap");
+    for (const call of calls) if (call !== coachTemplate) this.say(call);
+    if (mode === "coach") void this.coachLap(coachTemplate, { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid });
+  }
+
+  /** Coach mode: one Claude-written improvement for the next lap, falling back to the template line. */
+  async coachLap(fallback: Callout | undefined, lap: { lapNumber: number; lapTime: number; isValid: boolean }): Promise<void> {
+    const issues = this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues;
+    const sectors = this.state.sectors;
+    const context = {
+      lap: lap.lapNumber,
+      lapTimeS: Number(lap.lapTime.toFixed(3)),
+      valid: lap.isValid,
+      bestLapS: this.bestLap > 0 ? Number(this.bestLap.toFixed(3)) : null,
+      sectorDeltasToBestS: sectors?.lastTimes.map((time, index) => {
+        const best = sectors.bestTimes[index];
+        return time > 0 && Number.isFinite(best) && best > 0 ? Number((time - best).toFixed(2)) : null;
+      }) ?? null,
+      mistakesByCorner: Object.fromEntries([...issues].map(([kind, entry]) => [kind, Object.fromEntries(entry.corners)])),
+    };
+    let text = "";
+    try {
+      text = await Promise.race([
+        this.generate(COACH_PROMPT, `Lap data (JSON): ${JSON.stringify(context)}`),
+        new Promise<string>((resolve) => setTimeout(() => resolve(""), COACH_TIMEOUT_MS)),
+      ]);
+    } catch {
+      text = "";
+    }
+    const reply = text.replace(/\s+/g, " ").trim();
+    if (reply) this.say({ key: "coach-lap", priority: 0, text: reply });
+    else if (fallback) this.say(fallback);
   }
 
   private onIssue(event: IssueEvent): void {

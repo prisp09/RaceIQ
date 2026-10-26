@@ -60,20 +60,22 @@ export function lapCompleteCallouts(mode: EngineerMode, input: LapCompleteInput)
   const { lapTime, isValid, previousBest, pit } = input;
 
   if (pit?.fuelLapsRemaining != null && pit.fuelLapsRemaining > 0 && pit.fuelLapsRemaining < 2) {
-    calls.push({ key: "fuel-critical", priority: 2, text: `Fuel is critical. About ${pit.fuelLapsRemaining.toFixed(1)} laps left.` });
+    calls.push({ key: "fuel-critical", priority: 2, text: `Box, box. Fuel is critical, about ${pit.fuelLapsRemaining.toFixed(1)} laps left.` });
   }
   if (pit?.tireLapsToCritical != null && pit.tireLapsToCritical <= 2) {
-    calls.push({ key: "tyres-critical", priority: 2, text: `Tyres are almost gone. Roughly ${Math.max(0, Math.round(pit.tireLapsToCritical))} laps left in them.` });
+    calls.push({ key: "tyres-critical", priority: 2, text: `Box, box. Tyres are almost gone, roughly ${Math.max(0, Math.round(pit.tireLapsToCritical))} laps left in them.` });
   }
   if (mode === "quiet") return calls;
 
   if (!isValid) {
-    calls.push({ key: "lap-summary", priority: 1, text: `Lap ${input.lapNumber} invalidated. ${formatLapTime(lapTime)}.` });
+    calls.push({ key: "lap-summary", priority: 1, text: `Copy, lap ${input.lapNumber} invalidated. ${formatLapTime(lapTime)}.` });
   } else if (previousBest <= 0 || lapTime < previousBest - 0.0005) {
     const gain = previousBest > 0 ? ` Up by ${(previousBest - lapTime).toFixed(1)}.` : "";
-    calls.push({ key: "lap-summary", priority: 1, text: `Purple lap, ${formatLapTime(lapTime)}.${gain} Good job.` });
+    calls.push({ key: "lap-summary", priority: 1, text: `Purple lap, mate. ${formatLapTime(lapTime)}.${gain} Good job.` });
   } else {
-    calls.push({ key: "lap-summary", priority: 1, text: `${formatLapTime(lapTime)}, ${formatDelta(lapTime - previousBest)}.` });
+    const delta = lapTime - previousBest;
+    const nudge = delta > 0.5 ? " Push now." : "";
+    calls.push({ key: "lap-summary", priority: 1, text: `${formatLapTime(lapTime)}, ${formatDelta(delta)}.${nudge}` });
   }
 
   if (input.lapsSinceStatus >= 5 && pit) {
@@ -102,8 +104,7 @@ export function topMistake(tally: LapIssueTally): string | null {
   }
   if (!best) return null;
   const where = best.corner ? ` into ${best.corner}` : "";
-  const times = best.count > 1 ? `, ${best.count} times that lap` : "";
-  return `${ISSUE_WORDS[best.kind]}${where}${times}. ${ISSUE_ADVICE[best.kind] ?? ""}`.trim();
+  return `${ISSUE_WORDS[best.kind]}${where}. ${ISSUE_ADVICE[best.kind] ?? ""}`.trim();
 }
 
 /** Immediate call for a live issue the driver asked to hear about. */

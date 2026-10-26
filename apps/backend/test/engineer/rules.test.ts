@@ -30,7 +30,7 @@ describe("race engineer rules", () => {
 
   test("quiet mode still makes critical fuel calls", () => {
     const calls = lapCompleteCallouts("quiet", { ...base, pit: pit({ fuelLapsRemaining: 1.4 }) });
-    expect(calls).toEqual([{ key: "fuel-critical", priority: 2, text: "Fuel is critical. About 1.4 laps left." }]);
+    expect(calls).toEqual([{ key: "fuel-critical", priority: 2, text: "Box, box. Fuel is critical, about 1.4 laps left." }]);
   });
 
   test("normal mode summarises the lap against the best", () => {
@@ -39,7 +39,11 @@ describe("race engineer rules", () => {
 
   test("calls a personal best as a purple lap", () => {
     const [call] = lapCompleteCallouts("normal", { ...base, lapTime: 101.5 });
-    expect(call.text).toBe("Purple lap, 1:41.5. Up by 0.4. Good job.");
+    expect(call.text).toBe("Purple lap, mate. 1:41.5. Up by 0.4. Good job.");
+  });
+
+  test("tells the driver to push when well off the best", () => {
+    expect(lapCompleteCallouts("normal", { ...base, lapTime: 103 }).map((call) => call.text)).toEqual(["1:43.0, plus 1.1. Push now."]);
   });
 
   test("adds a status check every five laps", () => {
@@ -50,7 +54,7 @@ describe("race engineer rules", () => {
   test("coach mode names the most repeated mistake and corner", () => {
     const issues = tally([["brake-lockup", 3, [["Turn 1", 2], ["Turn 4", 1]]], ["understeer", 1, [["Turn 7", 1]]]]);
     const texts = lapCompleteCallouts("coach", { ...base, lastLapIssues: issues }).map((call) => call.text);
-    expect(texts).toContain("Lock-up into Turn 1, 3 times that lap. Ease the initial brake pressure.");
+    expect(texts).toContain("Lock-up into Turn 1. Ease the initial brake pressure.");
     expect(topMistake(new Map())).toBeNull();
   });
 
