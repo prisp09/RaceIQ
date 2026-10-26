@@ -34,6 +34,17 @@ export interface DisplaySettings {
   sessionDownsampleEnabled: boolean;
   sessionDownsampleAgeDays: 30 | 90 | 180 | 365;
   sessionDownsampleFrequencyHz: RecordingFrequencyHz;
+  /** Live race engineer. */
+  engineerEnabled?: boolean;
+  engineerMode?: "quiet" | "normal" | "coach";
+  engineerMicMode?: "push-to-talk" | "open-mic" | "off";
+  engineerPushToTalk?: { kind: "keyboard"; vk: number; name: string } | { kind: "joystick"; deviceId: number; button: number; name: string } | null;
+  engineerVoiceURI?: string | null;
+  engineerVoiceRate?: number;
+  engineerVoicePitch?: number;
+  engineerRadioFilter?: boolean;
+  engineerProvider?: "" | "gemini" | "openai" | "anthropic" | "openai-compatible";
+  engineerModel?: string;
   /** Server-injected canonical active recording directory. */
   resolvedRecordingDirectory?: string;
   udpPort?: number;

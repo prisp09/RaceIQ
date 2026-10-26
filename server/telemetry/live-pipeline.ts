@@ -29,6 +29,7 @@ import { DirectSessionRecorderAdapter, type DirectCaptureRecording } from "../se
 
 import { DashboardCaptureObservation } from "../session-capture/dashboard-observation";
 import { markDashboardCaptureCheckpoint, publishObservedDashboardCaptureFacts } from "../session-capture/dashboard-processor";
+import { emitLiveNotification, emitLiveTelemetry } from "../live-engineer/tap";
 type CaptureObservationEntry = { observation: DashboardCaptureObservation; rawFile: string | null };
 type RecordingSession = { sessionId: number; gameId: GameId; directCapture?: DirectCaptureRecording };
 type CapturedParserSource = {
@@ -987,13 +988,20 @@ const _defaultWs: WsAdapter = {
   get wantsDevTelemetry() {
     return wsManager.wantsDevTelemetry;
   },
-  broadcast: (packet, sectors, pit, liveIssues) => wsManager.broadcast(packet, sectors, pit, liveIssues),
+  broadcast: (packet, sectors, pit, liveIssues) => {
+    wsManager.broadcast(packet, sectors, pit, liveIssues);
+    emitLiveTelemetry(packet, sectors, pit);
+  },
   stageDevTelemetry: (packet) => wsManager.stageDevTelemetry(packet),
   publishTelemetry: ({ packet, sectors, pit, liveIssues, projection }) => {
     wsManager.broadcast(packet, sectors, pit, liveIssues);
     if (projection) wsManager.publishTelemetry(projection);
+    emitLiveTelemetry(packet, sectors, pit);
   },
-  broadcastNotification: (event) => wsManager.broadcastNotification(event),
+  broadcastNotification: (event) => {
+    wsManager.broadcastNotification(event);
+    emitLiveNotification(event);
+  },
   broadcastDevState: (state) => wsManager.broadcastDevState(state),
 };
 const _default = new LiveTelemetryPipeline(new RealDbAdapter(), _defaultWs, {

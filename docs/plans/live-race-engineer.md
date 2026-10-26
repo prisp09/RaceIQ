@@ -12,9 +12,9 @@ A radio-style race engineer that talks to the driver during a live session. It s
 | Text to speech | Browser `speechSynthesis`. Default voice: a mature British male (Edge "Microsoft Thomas Online (Natural) – English (United Kingdom)"), falling back to the closest `en-GB` male voice. Rate and pitch are adjustable. Optional later: offline Windows SAPI or a cloud voice provider. The voice is generic; it is not modeled on any real person. | Decided |
 | AI model | New `liveEngineer` AI feature through the existing provider stack. Claude (Anthropic) with Claude Haiku 5.5 recommended. | Decided |
 | Mic input | Push to talk and open mic are both required. Off is also available. | Decided |
-| Push-to-talk binding | Global keyboard key and wheel/button-box button that work while the game has focus. | **Pending: user's hardware (wheel or button box model, or keyboard)** |
-| Verbosity modes | Proposed Quiet / Normal / Coach (see below). | **Pending: confirm modes and default** |
-| Upstream | Whether to open an issue on SpeedHQ/RaceIQ before the PR. | **Pending** |
+| Push-to-talk binding | Any keyboard key or wheel/button-box button, chosen on a "press the button you want" screen and working while the game has focus (GetAsyncKeyState + winmm joystick polling). | Chosen default (user can change) |
+| Verbosity modes | Quiet / Normal / Coach, default Normal. | Chosen default (user can change) |
+| Upstream | Personal feature on the prisp09 fork only. No upstream issue or PR. | Decided |
 
 ## Verbosity modes (proposed)
 - **Quiet:** answers questions and follows standing instructions. Proactive calls are critical only: fuel for fewer than 2 laps, rapid tyre pressure loss, pit window open.
@@ -26,7 +26,7 @@ Proactive calls are template-based (no AI), with priorities, per-type cooldowns 
 ## Architecture
 1. **Live state (backend).** An engineer service subscribes to the live pipeline (`server/telemetry/live-pipeline.ts` broadcast port and `onLapComplete`). It keeps a rolling state: the latest packet, sector tracker output (delta to best and last lap, predicted lap), pit tracker, live issues (`detectLiveIssues`), fuel-per-lap estimate, and the last lap's insights resolved to track corners.
 2. **Callout rules (backend).** Deterministic rules turn state changes into callouts `{id, kind, priority, text}`. A mode filter, cooldowns and standing instructions decide which callouts are emitted.
-3. **Engineer agent (backend).** A Mastra agent (`liveEngineer` feature) with read-only tools over live state answers transcribed questions and registers standing instructions.
+3. **Engineer answers (backend).** One direct `liveEngineer` model call per question with a compact live snapshot in the prompt (no tool round trips, for radio latency). The reply can end with `INSTRUCTION:` or `MODE:` lines, which register standing instructions or change the mode.
 4. **Transport.** The existing WebSocket gets an `engineer` channel: the server sends speech and state events; the client sends questions and PTT state.
 5. **Global input (backend, Windows).** A PowerShell helper (same pattern as `server/runtime/platform/tray.ts`) registers a keyboard hotkey (RegisterHotKey) and polls wheel and button-box buttons (winmm joystick API). It reports PTT down/up to the backend, which relays it over the `engineer` channel.
 6. **Voice (client).** A `SpeechToText` adapter (Web Speech API in phase 1), voice activity detection for open mic, mic muted while the engineer speaks, and `speechSynthesis` playback with a priority queue.

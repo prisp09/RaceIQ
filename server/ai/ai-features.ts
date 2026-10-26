@@ -1,11 +1,11 @@
-export type AiFeature = "analysis" | "chat" | "autoTune" | "driverProfile" | "compaction";
+export type AiFeature = "analysis" | "chat" | "autoTune" | "driverProfile" | "compaction" | "liveEngineer";
 export type AiProvider = "gemini" | "openai" | "anthropic" | "openai-compatible";
 
 export type AiFeatureConfig = {
-  providerSetting: "aiProvider" | "chatProvider" | "autoTuneProvider" | "driverProfileProvider";
-  modelSetting: "aiModel" | "chatModel" | "autoTuneModel" | "driverProfileModel";
+  providerSetting: "aiProvider" | "chatProvider" | "autoTuneProvider" | "driverProfileProvider" | "engineerProvider";
+  modelSetting: "aiModel" | "chatModel" | "autoTuneModel" | "driverProfileModel" | "engineerModel";
   thinkingBudgetSetting: "aiThinkingBudget" | "chatThinkingBudget" | "driverProfileThinkingBudget";
-  fallbackFeature?: "analysis";
+  fallbackFeature?: "analysis" | "chat";
 };
 
 /**
@@ -40,5 +40,11 @@ export const AI_FEATURES: Record<AiFeature, AiFeatureConfig> = {
     providerSetting: "chatProvider",
     modelSetting: "chatModel",
     thinkingBudgetSetting: "chatThinkingBudget",
+  },
+  liveEngineer: {
+    providerSetting: "engineerProvider",
+    modelSetting: "engineerModel",
+    thinkingBudgetSetting: "chatThinkingBudget",
+    fallbackFeature: "chat",
   },
 };

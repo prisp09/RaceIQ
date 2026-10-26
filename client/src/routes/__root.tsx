@@ -31,6 +31,7 @@ import { TracksCatalogueHostProvider } from "../features/tracks-catalogue-host";
 import { LapReplayHostProvider } from "../features/lap-replay-host";
 import { SessionsPageHostProvider } from "../features/sessions-page-host";
 import { SessionAnalyseHostProvider } from "../features/session-analyse-host";
+import { EngineerRadio } from "../components/engineer/EngineerRadio";
 function OverlayShell() {
   useWebSocket();
   const { displaySettings, settingsLoaded } = useSettings();
@@ -173,6 +174,8 @@ function AppShell() {
             </ResponsiveWorkspace>
           </main>
         </div>
+
+        {displaySettings.engineerEnabled && <EngineerRadio />}
 
         {mobileNavOpen && (
           <div className="fixed inset-0 z-50 flex justify-end @3xl/shell:hidden">

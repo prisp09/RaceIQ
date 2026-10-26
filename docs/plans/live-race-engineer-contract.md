@@ -5,7 +5,7 @@ Requirements: [plan](live-race-engineer.md). Owners: [UI](live-race-engineer-ui-
 ## Settings
 Existing GET/PUT `/api/settings` with partial-update merge. New fields, all required in complete settings and optional in partial requests:
 - `engineerEnabled`: boolean, default `false`.
-- `engineerMode`: `"quiet" | "normal" | "coach"`, default **Pending** (proposed `"normal"`).
+- `engineerMode`: `"quiet" | "normal" | "coach"`, default `"normal"`.
 - `engineerMicMode`: `"push-to-talk" | "open-mic" | "off"`, default `"push-to-talk"`.
 - `engineerPushToTalk`: `null | { kind: "keyboard"; key: string; modifiers: ("ctrl"|"alt"|"shift")[] } | { kind: "joystick"; deviceId: string; deviceName: string; button: number }`, default `null`. **Pending:** device support confirmed after hardware answer.
 - `engineerVoice`: `{ voiceURI: string | null; rate: number; pitch: number }`, default `{ voiceURI: null, rate: 1, pitch: 0.9 }`. `voiceURI: null` means the client picks the best en-GB male voice. Rate is 0.7–1.3 and pitch is 0.5–1.5.

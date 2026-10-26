@@ -26,6 +26,7 @@
     "./ai/insight-format": "./ai/insight-format.ts",
     "./ai/lap-observations": "./ai/lap-observations.ts",
     "./ai/openai-compatible-headers": "./ai/openai-compatible-headers.ts",
+    "./live-engineer/tap": "./live-engineer/tap.ts",
     "./ai/openai-compatible-provider": "./ai/openai-compatible-provider.ts",
     "./ai/provider-error": "./ai/provider-error.ts",
     "./ai/providers": "./ai/providers.ts",

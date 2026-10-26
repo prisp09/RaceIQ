@@ -251,6 +251,8 @@ export function useWebSocket() {
             queryClient.invalidateQueries({ queryKey: queryKeys.userTunes });
             invalidateDashboard();
             telemetryStore.actions.incrementReprocessProgress();
+          } else if (typeof data.type === "string" && data.type.startsWith("engineer-")) {
+            window.dispatchEvent(new CustomEvent("raceiq-engineer", { detail: data }));
           } else if (data.type === "experiment-updated") {
             const sid = data.sessionId as number;
             queryClient.invalidateQueries({ queryKey: ["experiment-tests", sid] });

@@ -43,6 +43,20 @@ const AppSettingsSchema = z.object({
   driverProfileModel: z.string().default(""),
   driverProfileThinkingBudget: z.number().int().min(0).nullable().default(null),
   driverProfileMaxOutputTokens: z.number().int().min(512).max(32768).default(5000),
+  // Live race engineer. Provider/model fall back to the AI Chat settings when empty.
+  engineerEnabled: z.boolean().default(false),
+  engineerMode: z.enum(["quiet", "normal", "coach"]).default("normal"),
+  engineerMicMode: z.enum(["push-to-talk", "open-mic", "off"]).default("push-to-talk"),
+  engineerPushToTalk: z.union([
+    z.object({ kind: z.literal("keyboard"), vk: z.number().int().min(1).max(254), name: z.string().max(40) }),
+    z.object({ kind: z.literal("joystick"), deviceId: z.number().int().min(0).max(15), button: z.number().int().min(1).max(32), name: z.string().max(80) }),
+  ]).nullable().default(null),
+  engineerVoiceURI: z.string().max(300).nullable().default(null),
+  engineerVoiceRate: z.number().min(0.7).max(1.3).default(0.95),
+  engineerVoicePitch: z.number().min(0.5).max(1.5).default(0.85),
+  engineerRadioFilter: z.boolean().default(true),
+  engineerProvider: AiProviderSchema.default(""),
+  engineerModel: z.string().default(""),
   localEndpoint: z.string().default("http://localhost:1234/v1"),
   wsRefreshRate: z.enum(["60", "50", "40", "30"]).default("60"),
   // Max render rate for the 3D wireframe Canvas. Throttles gl.render

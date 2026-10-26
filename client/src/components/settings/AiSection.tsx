@@ -3,6 +3,7 @@ import { AiAnalysisSection } from "./AiAnalysisSection";
 import { AiAutoTuneSection } from "./AiAutoTuneSection";
 import { AiChatSection } from "./AiChatSection";
 import { AiDriverProfileSection } from "./AiDriverProfileSection";
+import { AiEngineerSection } from "./AiEngineerSection";
 import { ProviderSetupSection } from "./ProviderSetupSection";
 import { useAiSettings } from "./useAiSettings";
 
@@ -25,6 +26,7 @@ export function AiSection() {
         <AiChatSection state={chat} />
         <AiAutoTuneSection state={autoTune} />
         <AiDriverProfileSection state={driverProfile} />
+        <AiEngineerSection />
       </div>
     </section>
   );

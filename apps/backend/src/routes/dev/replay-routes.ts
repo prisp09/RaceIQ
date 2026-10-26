@@ -13,6 +13,7 @@ import { PitTracker } from "@raceiq/backend-core/live-strategy/pit-tracker";
 import { LiveTelemetryProjector } from "@raceiq/telemetry-core/telemetry/live-projector";
 import { normalizeTelemetryPacket } from "@raceiq/telemetry-core/telemetry/normalization";
 import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
+import { emitLiveNotification, emitLiveTelemetry } from "@raceiq/backend-core/live-engineer/tap";
 import { resolveRecordingGameId, resolveRecordingPath } from "./recording-support";
 
 const DEFAULT_PACKET_LIMIT = 160;
@@ -171,6 +172,7 @@ export const replayRoutes = new Hono()
     });
 
     const sectorTracker = new SectorTracker();
+    let replayLapNumber = -1;
     await sectorTracker.reset(packets[0]!.trackId, gameId, packets[0]!.carId);
     if (gameId === "iracing") {
       const referenceLap = selectIRacingReferenceLap(recorded.packets);
@@ -200,6 +202,12 @@ export const replayRoutes = new Hono()
       });
       wsManager.publishTelemetry(projection);
       wsManager.broadcast(packet, sectors, pit);
+      emitLiveTelemetry(packet, sectors, pit);
+      // Replays never save laps, so tell live taps (race engineer) about lap completions directly.
+      if (replayLapNumber >= 0 && packet.LapNumber > replayLapNumber && sectors && sectors.lastLapTime > 0) {
+        emitLiveNotification({ type: "lap-saved", sessionId: replaySessionId, lapNumber: replayLapNumber + 1, lapTime: sectors.lastLapTime, isValid: true });
+      }
+      replayLapNumber = packet.LapNumber;
       if (intervalMs > 0) {
         await new Promise<void>((resolve) => setTimeout(resolve, intervalMs));
       }

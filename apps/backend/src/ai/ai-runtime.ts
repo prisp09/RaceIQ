@@ -15,7 +15,7 @@ import {
 import type { ResolvedAi } from "@raceiq/backend-core/ai/ai-types";
 
 function sectionFor(feature: AiFeature): "Chat" | "Analysis" {
-  return feature === "chat" || feature === "compaction" ? "Chat" : "Analysis";
+  return feature === "chat" || feature === "compaction" || feature === "liveEngineer" ? "Chat" : "Analysis";
 }
 
 function selectedSettings(settings: AppSettings, feature: AiFeature): {

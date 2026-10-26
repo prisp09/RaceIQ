@@ -20,6 +20,7 @@ import { acEvoRoutes } from "./games/ac-evo";
 import { f125Routes } from "./games/f1-2025";
 import { miscRoutes } from "./system/index";
 import { cacheRoutes } from "./cache-routes";
+import { engineerRoutes } from "./engineer-routes";
 import { devRoutes } from "./dev/index";
 import { dashboardRoutes } from "./dashboard-routes";
 
@@ -58,7 +59,8 @@ const app = new Hono()
   .route("/", acEvoRoutes)
   .route("/", f125Routes)
   .route("/", miscRoutes)
-  .route("/", cacheRoutes);
+  .route("/", cacheRoutes)
+  .route("/", engineerRoutes);
 
 // Fixture import/replay routes stay unavailable in normal production. Compiled
 // Playwright runs opt in explicitly so they exercise the packaged server too.

@@ -34,6 +34,7 @@ import { registerDriverProfileLapNotifier } from "@raceiq/backend-core/driver-pr
 import { notifyDriverProfileLap } from "../driver-profile/runner";
 import { DashboardAuth, setDashboardAuth } from "./dashboard-auth";
 import { configureHttpAccess, httpAccess } from "./http-access";
+import { engineerService } from "../engineer/service";
 
 export interface BootOptions {
   httpPort?: number;
@@ -169,6 +170,10 @@ export async function bootServer(options: BootOptions = {}): Promise<RunningServ
 
 
   nativeSources = startNativeSourceSupervisor(recordingGameId, dumpMode);
+  if (!dumpMode) {
+    engineerService.start();
+    process.once("exit", () => engineerService.stop());
+  }
   classificationWorker = dumpMode ? null : startClassificationMigrationWorker({ resetInterrupted: true });
   const trayCandidates = httpAccess.hosts
     .map((host) => host === "0.0.0.0" || host === "::" ? "localhost" : host)
