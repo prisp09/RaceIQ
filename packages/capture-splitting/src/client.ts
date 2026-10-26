@@ -2,8 +2,13 @@ import { Schema } from "effect";
 import { SplitRequestSchema, WorkerMessageSchema, type SplitRequest, type WorkerMessage } from "./protocol";
 import { SplitFailure } from "./index";
 import type { PublishedManifest } from "./contract";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const isCompiled = import.meta.url.includes("/$bunfs/") || import.meta.url.includes("~BUN");
+// Decode the module URL first: compiled Windows builds report a percent-encoded
+// `B:/%7EBUN/root` URL, so matching "~BUN" on the raw URL misses them.
+const sourceDir = dirname(fileURLToPath(import.meta.url));
+const isCompiled = sourceDir.startsWith("/$bunfs") || sourceDir.includes("~BUN");
 export function runSplitWorker(request: SplitRequest, onProgress?: (message: Extract<WorkerMessage, { type: "progress" }>) => void, signal?: AbortSignal): Promise<PublishedManifest> {
   const validated = Schema.decodeSync(SplitRequestSchema)(request);
   return new Promise((resolve, reject) => {
