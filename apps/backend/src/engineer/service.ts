@@ -17,13 +17,16 @@ import { EngineerLiveState, type IssueEvent } from "./state";
 import {
   INSTRUCTION_KINDS,
   issueCallout,
+  sessionEndCallout,
   lapCompleteCallouts,
   sectorCallout,
   type Callout,
   type EngineerMode,
+  type Rng,
   type InstructionKind,
 } from "./rules";
 import { PushToTalkWatcher, type PushToTalkBinding } from "./input-helper";
+import { lapRecordFromTally, summarizeSession, type SessionLapRecord } from "./session-summary";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 
@@ -45,24 +48,37 @@ const TRANSCRIPT_LIMIT = 60;
 // model's hidden reasoning, which Claude counts against max_tokens.
 export const ENGINEER_MAX_OUTPUT_TOKENS = 2000;
 
-const SYSTEM_PROMPT = `You are the driver's race engineer on team radio during a live sim racing session. You are British, calm and concise, like a Formula 1 race engineer.
-Rules:
-- Reply in at most two short sentences, under 35 words. No lists, no markdown, no emojis.
-- Use only the live data provided. If something isn't in the data, say you don't have it.
-- Write lap times as 1:42.3 and deltas as "plus 0.4" or "minus 0.2". Round numbers for speech.
-- Address the driver as "you" or "mate". Use real radio phrasing where it fits: "Copy.", "Understood.", "Push now.", "Box, box." (only when they should pit).
+const RADIO_STYLE = `Radio style:
+- Sound like a real race engineer on the radio, calm and British, for any series (GT3, single-seaters, touring cars). Use general racing lingo: "copy", "understood", "box this lap", "push", "gap", "stint", "deg", "tyres in the window", "nice and tidy". Don't use series-specific terms (like DRS or ERS) unless the data shows the car has them.
+- Vary your wording; don't reuse the same opener. Say "mate" only occasionally, at most once in every four or five messages.
+- No lists, no markdown, no emojis. Write lap times as 1:42.3 and deltas as "plus 0.4" or "minus 0.2". Round numbers for speech.`;
+
+const SYSTEM_PROMPT = `You are the driver's race engineer on team radio during a sim racing session.
+${RADIO_STYLE}
+Answering:
+- By default reply in one or two short sentences, under 35 words.
+- For open questions (session summary, what went well or badly, the car, the track, strategy, setup) you may use up to five sentences. Be direct and practical.
+- Use the live data, session summary, corner splits and driver dossier provided. For general questions about tracks, cars, technique or setup you may use your own racing knowledge; say when something is a general suggestion rather than from their data.
+- Setup advice: give one to three concrete changes in simple terms, e.g. "front anti-roll bar down two clicks, brake bias one click rearward", tied to what the data shows (understeer, oversteer, lock-ups, bottoming). Small steps, one thing at a time.
+- If something you need isn't in the data, say so briefly and still give your best general advice.
 - If the driver asks you to start or stop calling something out repeatedly, add a last line exactly "INSTRUCTION: on <kind>" or "INSTRUCTION: off <kind>". Kinds: brake-lockup (lock-ups), understeer, oversteer, bottoming, sector-delta (sector splits), lap-delta (lap times).
 - If the driver asks you to talk more or less, add a last line exactly "MODE: quiet", "MODE: normal", "MODE: coach" or "MODE: co-driver".`;
 
-const COACH_PROMPT = `You are the driver's race engineer on team radio, British and calm, like a Formula 1 race engineer. After each lap you give a short debrief for the next lap.
+const SESSION_END_PROMPT = `You are the driver's race engineer on team radio. The session has just ended. Give a short, warm end-of-session message in two to three sentences, under 45 words.
+${RADIO_STYLE}
+- Lead with the result when there is one: P1 deserves real celebration ("That's P1! Brilliant job."), a podium is "P3, that's a podium, well driven", a poor result is honest but supportive ("Tough one today, we'll regroup.").
+- Then one thing that went well and one thing to work on next time, from the session summary.`;
+
+const COACH_PROMPT = `You are the driver's race engineer on team radio, British and calm, for any racing series. After each lap you give a short debrief for the next lap.
 Rules:
 - Two or three short sentences, under 40 words. No lists, no markdown.
 - Start with the lap time against their best in a few words (e.g. "1:42.3, two tenths off.", "Purple lap, mate."). Say "lap invalidated" if it was invalid.
 - Then one or two incremental improvements: name the corner and what to change (braking point, entry speed, throttle timing, line, kerbs). Coach, don't list stats.
-- Radio style: "mate", "copy", "push now" where they fit. Example: "1:42.3, two tenths off. Brake a touch earlier into Turn 2, you're running wide on exit."
+- Example: "1:42.3, two tenths off. Brake a touch earlier into Turn 2, you're running wide on exit."
+${RADIO_STYLE}
 - Use only the lap data given. If there are no mistakes, tell them to keep the rhythm and push in their weakest sector.`;
 
-const CO_DRIVER_PROMPT = `You are a co-driver on team radio, British and calm. From the driver's last lap you write short tips that will be read out just before each corner group on the next lap.
+const CO_DRIVER_PROMPT = `You are a co-driver on team radio, British and calm, for any racing series. From the driver's last lap you write short tips that will be read out just before each corner group on the next lap.
 Rules:
 - Reply with ONLY a JSON array: [{"group":"G1","tip":"..."}]. No other text.
 - Each tip is 6 to 12 words, radio style, one concrete change: braking point, entry speed, line, kerbs or throttle. Example: "Brake ten metres later, use the kerb on exit."
@@ -124,12 +140,16 @@ export class EngineerService {
   private coLapNumber = -1;
   private coLastTick = 0;
   lastLapCornerStats: CornerGroupStats[] = [];
+  readonly sessionLaps: SessionLapRecord[] = [];
+  private endedSessionKey = "";
+  private readonly rng: Rng;
   private dossier = "";
   private dossierKey = "";
   bestLapCornerStats: CornerGroupStats[] = [];
 
-  constructor(generate: EngineerGenerate = defaultGenerate) {
+  constructor(generate: EngineerGenerate = defaultGenerate, rng: Rng = Math.random) {
     this.generate = generate;
+    this.rng = rng;
     this.state = new EngineerLiveState((event) => this.onIssue(event), (sector, sectors) => this.onSector(sector, sectors));
     this.ptt = new PushToTalkWatcher(
       (pressed) => wsManager.broadcastNotification({ type: "engineer-ptt", pressed }),
@@ -143,9 +163,13 @@ export class EngineerService {
       onTelemetry: (packet, sectors, pit) => {
         if (!this.settings.engineerEnabled) return;
         this.state.update(packet, sectors, pit);
-        if (this.mode === "co-driver") this.coDriverTick(packet);
+        this.coDriverTick(packet);
       },
-      onNotification: (event) => { if (this.settings.engineerEnabled && event.type === "lap-saved") this.onLapSaved(event); },
+      onNotification: (event) => {
+        if (!this.settings.engineerEnabled) return;
+        if (event.type === "lap-saved") this.onLapSaved(event);
+        else if (event.type === "recording-sealed") void this.endOfSession();
+      },
     });
     this.refreshSettings();
     this.settingsTimer = setInterval(() => this.refreshSettings(), 2000);
@@ -186,6 +210,7 @@ export class EngineerService {
     this.lastLapCornerStats = [];
     this.bestLapCornerStats = [];
     this.dossierKey = "";
+    this.sessionLaps.length = 0;
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
   }
 
@@ -242,6 +267,8 @@ export class EngineerService {
       const recent = this.transcript.slice(-8, -1).map((entry) => `${entry.from === "driver" ? "Driver" : "Engineer"}: ${entry.text}`).join("\n");
       const prompt = [
         `Live data (JSON): ${JSON.stringify(this.state.snapshot())}`,
+        `Session so far (JSON): ${JSON.stringify(summarizeSession(this.sessionLaps))}`,
+        `Corner splits, last lap vs best lap (JSON): ${JSON.stringify(this.cornerSplits())}`,
         `Engineer mode: ${this.mode}. Active callouts: ${[...this.instructions].join(", ") || "none"}.`,
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
@@ -297,11 +324,15 @@ export class EngineerService {
     const sessionKey = String(event.sessionId ?? "");
     if (sessionKey !== this.sessionKey) {
       this.sessionKey = sessionKey;
+      this.sessionLaps.length = 0;
       this.bestLap = 0;
       this.lapsSinceStatus = 0;
     }
     const isValid = event.isValid !== false;
     const previousBest = this.bestLap;
+    const lapIssues = this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues;
+    const sectorTimes = Array.isArray(event.sectors) ? (event.sectors as number[]) : (this.state.sectors?.lastTimes ?? []);
+    this.sessionLaps.push(lapRecordFromTally(Number(event.lapNumber) || this.sessionLaps.length + 1, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null));
     this.lapsSinceStatus++;
     const mode = this.mode === "quiet" && this.instructions.has("lap-delta") ? "normal" : this.mode;
     const calls = lapCompleteCallouts(mode, {
@@ -312,7 +343,7 @@ export class EngineerService {
       pit: this.state.pit,
       lastLapIssues: this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues,
       lapsSinceStatus: this.lapsSinceStatus,
-    });
+    }, this.rng);
     if (calls.some((call) => call.key === "status")) this.lapsSinceStatus = 0;
     if (isValid && (this.bestLap <= 0 || lapTime < this.bestLap)) this.bestLap = lapTime;
     if (mode !== "coach" && mode !== "co-driver") {
@@ -326,6 +357,39 @@ export class EngineerService {
     const coDriver = mode === "co-driver" && this.coGroups.length > 0;
     void this.coachLap(lap, coDriver);
     if (coDriver) setTimeout(() => void this.refreshCornerTips(lap), CO_DRIVER_SETTLE_MS);
+  }
+
+  /** Per-corner-group time on the last lap against the best lap, for questions. */
+  cornerSplits(): Array<Record<string, unknown>> {
+    const best = new Map(this.bestLapCornerStats.map((entry) => [entry.id, entry]));
+    const labels = new Map(this.coGroups.map((group) => [group.id, group.label]));
+    return this.lastLapCornerStats.map((entry) => {
+      const ref = best.get(entry.id);
+      return {
+        corner: labels.get(entry.id) ?? entry.id,
+        timeS: entry.timeS,
+        bestLapTimeS: ref?.timeS ?? null,
+        deltaS: ref ? Number((entry.timeS - ref.timeS).toFixed(2)) : null,
+        minKph: entry.minKph,
+        bestLapMinKph: ref?.minKph ?? null,
+      };
+    });
+  }
+
+  /** End-of-session debrief with the result; template fallback if the AI fails. */
+  async endOfSession(): Promise<void> {
+    if (this.sessionLaps.length === 0 || this.endedSessionKey === this.sessionKey) return;
+    this.endedSessionKey = this.sessionKey;
+    const position = this.state.packet?.RacePosition || this.sessionLaps.at(-1)?.position || null;
+    const isRace = this.sessionType === "race" || (this.sessionType === null && position !== null && position > 0);
+    let text = "";
+    try {
+      const context = { sessionType: this.sessionType ?? "unknown", finalPosition: position, summary: summarizeSession(this.sessionLaps) };
+      text = (await this.generate(SESSION_END_PROMPT + this.sessionLine(), `Session result (JSON): ${JSON.stringify(context)}`, await this.driverDossier())).replace(/\s+/g, " ").trim();
+    } catch {
+      text = "";
+    }
+    this.say(text ? { key: "session-end", priority: 1, text } : sessionEndCallout(position, isRace, this.rng));
   }
 
   /** Co-driver: records each corner group and plays cached tips ahead of braking zones. */
@@ -353,6 +417,8 @@ export class EngineerService {
     this.coRecorder.update(packet, frac);
     if (nowMs - this.coLastTick < 100) return;
     this.coLastTick = nowMs;
+    // Corner timing is recorded in every mode (questions use it); tips only play in Co-driver.
+    if (this.mode !== "co-driver") return;
     const tip = this.tips.update(frac, packet.Speed, trackLength, nowMs);
     if (tip) this.say({ key: `tip-${tip.groupId}`, priority: 0, text: tip.text });
   }

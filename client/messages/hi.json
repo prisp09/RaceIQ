@@ -3038,5 +3038,10 @@
   "engineer_azure_key": "Azure Speech कुंजी",
   "engineer_azure_region": "Azure क्षेत्र",
   "engineer_azure_active": "Azure Thomas (UK) पूरे रेडियो फ़िल्टर के साथ चालू है।",
-  "engineer_azure_inactive": "सेट नहीं: ब्राउज़र आवाज़ शोर और स्क्वेल्च के साथ।"
+  "engineer_azure_inactive": "सेट नहीं: ब्राउज़र आवाज़ शोर और स्क्वेल्च के साथ।",
+  "engineer_pop_out": "अलग खोलें",
+  "engineer_maximize": "बड़ा करें",
+  "engineer_close_window": "विंडो बंद करें",
+  "engineer_popped_out": "रेडियो अपनी अलग विंडो में है।",
+  "engineer_bring_back": "वापस लाएँ"
 }

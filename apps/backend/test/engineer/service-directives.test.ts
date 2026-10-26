@@ -27,13 +27,13 @@ describe("race engineer lap calls", () => {
     const said: string[] = [];
     const original = wsManager.broadcastNotification.bind(wsManager);
     wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
-    const service = new EngineerService();
+    const service = new EngineerService(undefined, () => 0);
     try {
       service.start();
       emitLiveNotification({ type: "lap-saved", sessionId: 1, lapNumber: 1, lapTime: 102.34, isValid: true });
       emitLiveNotification({ type: "lap-saved", sessionId: 1, lapNumber: 2, lapTime: 102.8, isValid: true });
       emitLiveNotification({ type: "lap-saved", sessionId: 1, lapNumber: 3, lapTime: 101.9, isValid: true });
-      expect(said).toEqual(["Purple lap, mate. 1:42.3. Good job.", "1:42.8, plus 0.5.", "Purple lap, mate. 1:41.9. Up by 0.4. Good job."]);
+      expect(said).toEqual(["Purple lap. 1:42.3. Good job.", "1:42.8, plus 0.5.", "Purple lap. 1:41.9. Up by 0.4. Good job."]);
     } finally {
       service.stop();
       wsManager.broadcastNotification = original;
@@ -80,7 +80,7 @@ describe("race engineer coach calls", () => {
     saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "coach" });
     const { said, restore } = capture();
     let asked = 0;
-    const service = new EngineerService(async () => { asked++; return ""; });
+    const service = new EngineerService(async () => { asked++; return ""; }, () => 0);
     service.state.pit = { fuelPerLap: 2.5, fuelLapsRemaining: 1.2, tireLapsToCritical: 20 } as never;
     try {
       service.start();

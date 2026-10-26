@@ -31,7 +31,7 @@ import { TracksCatalogueHostProvider } from "../features/tracks-catalogue-host";
 import { LapReplayHostProvider } from "../features/lap-replay-host";
 import { SessionsPageHostProvider } from "../features/sessions-page-host";
 import { SessionAnalyseHostProvider } from "../features/session-analyse-host";
-import { EngineerRadio } from "../components/engineer/EngineerRadio";
+import { EngineerDrawer } from "../components/engineer/EngineerDrawer";
 function OverlayShell() {
   useWebSocket();
   const { displaySettings, settingsLoaded } = useSettings();
@@ -172,7 +172,7 @@ function AppShell() {
             <ResponsiveWorkspace>
               <Outlet key={uiLocale} />
             </ResponsiveWorkspace>
-            {displaySettings.engineerEnabled && <EngineerRadio />}
+            {displaySettings.engineerEnabled && <EngineerDrawer />}
           </main>
         </div>
 
@@ -264,7 +264,7 @@ function RootLayout() {
             <SessionsPageHostProvider>
             <SessionAnalyseHostProvider>
             {auth.authenticated && <DashboardConnection />}
-            {isOverlayPath(location.pathname) ? <OverlayShell /> : pathname === "/login" || pathname === "/onboarding" ? <Outlet /> : <AppShell />}
+            {isOverlayPath(location.pathname) ? <OverlayShell /> : pathname === "/login" || pathname === "/onboarding" || pathname === "/engineer-radio" ? <Outlet /> : <AppShell />}
             </SessionAnalyseHostProvider>
             </SessionsPageHostProvider>
             </LapReplayHostProvider>

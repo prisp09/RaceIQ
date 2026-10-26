@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Chiave Azure Speech",
   "engineer_azure_region": "Regione Azure",
   "engineer_azure_active": "Azure Thomas (UK) con filtro radio completo.",
-  "engineer_azure_inactive": "Non impostato: voce del browser con fruscio e squelch."
+  "engineer_azure_inactive": "Non impostato: voce del browser con fruscio e squelch.",
+  "engineer_pop_out": "Stacca",
+  "engineer_maximize": "Ingrandisci",
+  "engineer_close_window": "Chiudi finestra",
+  "engineer_popped_out": "La radio è in una finestra separata.",
+  "engineer_bring_back": "Riporta qui"
 }

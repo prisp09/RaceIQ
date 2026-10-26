@@ -3041,5 +3041,10 @@
   "engineer_azure_key": "Azure Speech key",
   "engineer_azure_region": "Azure region",
   "engineer_azure_active": "Using Azure Thomas (UK) with the full radio filter.",
-  "engineer_azure_inactive": "Not set: using the browser voice with static and squelch."
+  "engineer_azure_inactive": "Not set: using the browser voice with static and squelch.",
+  "engineer_pop_out": "Pop out",
+  "engineer_maximize": "Maximize",
+  "engineer_close_window": "Close window",
+  "engineer_popped_out": "Engineer radio is in its own window.",
+  "engineer_bring_back": "Bring back"
 }

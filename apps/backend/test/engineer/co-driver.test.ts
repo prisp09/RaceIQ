@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { NamedSegment } from "@raceiq/shared/racing/tracks/named-segments";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, tipTriggerFrac } from "../../src/engineer/co-driver";
+import { summarizeSession, type SessionLapRecord } from "../../src/engineer/session-summary";
 
 const corner = (number: number, startFrac: number, endFrac: number): NamedSegment => ({ type: "corner", name: `T${number}`, number, startFrac, endFrac });
 const straight = (startFrac: number, endFrac: number): NamedSegment => ({ type: "straight", name: "Straight", startFrac, endFrac });
@@ -89,5 +90,24 @@ describe("co-driver corner recording", () => {
     recorder.update(packet(130, 0, 13), 0.12);
     recorder.update(packet(160, 0, 14), 0.125);
     expect(recorder.finish()).toEqual([{ id: "G1", entryKph: 150, minKph: 95, exitKph: 130, brakeMetresBeforeEntry: 50, timeS: 3, brakeFrac: 0.09 }]);
+  });
+});
+
+describe("session summary for open questions", () => {
+  test("summarises pace, consistency, sectors, recurring mistakes and positions", () => {
+    const laps: SessionLapRecord[] = [
+      { lap: 1, timeS: 103, valid: true, sectorTimesS: [34, 35, 34], mistakes: { "brake-lockup": { "Turn 1": 2 } }, position: 5 },
+      { lap: 2, timeS: 102, valid: true, sectorTimesS: [33.5, 34.5, 34], mistakes: { "brake-lockup": { "Turn 1": 1 }, understeer: { "Turn 6": 1 } }, position: 4 },
+      { lap: 3, timeS: 104, valid: false, sectorTimesS: [35, 35, 34], mistakes: {}, position: 4 },
+      { lap: 4, timeS: 101.5, valid: true, sectorTimesS: [33.5, 34, 34], mistakes: {}, position: 3 },
+    ];
+    const summary = summarizeSession(laps);
+    expect(summary).toMatchObject({
+      laps: 4, validLaps: 3, bestLapS: 101.5, averageValidLapS: 102.167, cleanLaps: 2, startPosition: 5, currentPosition: 3,
+      recurringMistakes: [{ what: "brake-lockup at Turn 1", count: 3 }, { what: "understeer at Turn 6", count: 1 }],
+    });
+    expect(summary.lapTimesS).toEqual([103, 102, "104 (invalid)", 101.5]);
+    expect((summary.sectors as Array<{ sector: number; bestS: number; averageLossS: number }>)[0]).toEqual({ sector: 1, bestS: 33.5, averageLossS: 0.17 });
+    expect(summarizeSession([])).toEqual({ laps: 0 });
   });
 });

@@ -3038,5 +3038,10 @@
   "engineer_azure_key": "Azure Speech 키",
   "engineer_azure_region": "Azure 지역",
   "engineer_azure_active": "Azure Thomas (UK)와 전체 무전 필터 사용 중.",
-  "engineer_azure_inactive": "설정 안 됨: 브라우저 음성에 잡음과 스켈치 추가."
+  "engineer_azure_inactive": "설정 안 됨: 브라우저 음성에 잡음과 스켈치 추가.",
+  "engineer_pop_out": "분리",
+  "engineer_maximize": "최대화",
+  "engineer_close_window": "창 닫기",
+  "engineer_popped_out": "무전이 별도 창에서 열려 있습니다.",
+  "engineer_bring_back": "되돌리기"
 }

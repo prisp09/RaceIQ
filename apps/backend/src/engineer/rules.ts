@@ -44,6 +44,12 @@ const ISSUE_ADVICE: Partial<Record<TuneIssueKind, string>> = {
   bottoming: "Watch the kerbs there.",
 };
 
+/** Random source for picking phrasing; injectable so tests are deterministic. */
+export type Rng = () => number;
+export function pick<T>(options: readonly T[], rng: Rng = Math.random): T {
+  return options[Math.min(options.length - 1, Math.floor(rng() * options.length))]!;
+}
+
 export type LapCompleteInput = {
   lapNumber: number;
   lapTime: number;
@@ -55,26 +61,29 @@ export type LapCompleteInput = {
 };
 
 /** Calls after a completed lap, filtered by mode. */
-export function lapCompleteCallouts(mode: EngineerMode, input: LapCompleteInput): Callout[] {
+export function lapCompleteCallouts(mode: EngineerMode, input: LapCompleteInput, rng: Rng = Math.random): Callout[] {
   const calls: Callout[] = [];
   const { lapTime, isValid, previousBest, pit } = input;
 
   if (pit?.fuelLapsRemaining != null && pit.fuelLapsRemaining > 0 && pit.fuelLapsRemaining < 2) {
-    calls.push({ key: "fuel-critical", priority: 2, text: `Box, box. Fuel is critical, about ${pit.fuelLapsRemaining.toFixed(1)} laps left.` });
+    const laps = pit.fuelLapsRemaining.toFixed(1);
+    calls.push({ key: "fuel-critical", priority: 2, text: pick([`Box, box. Fuel is critical, about ${laps} laps left.`, `Box this lap, fuel's critical. About ${laps} laps in the tank.`, `Fuel critical, ${laps} laps left. Box, box.`], rng) });
   }
   if (pit?.tireLapsToCritical != null && pit.tireLapsToCritical <= 2) {
-    calls.push({ key: "tyres-critical", priority: 2, text: `Box, box. Tyres are almost gone, roughly ${Math.max(0, Math.round(pit.tireLapsToCritical))} laps left in them.` });
+    const laps = Math.max(0, Math.round(pit.tireLapsToCritical));
+    calls.push({ key: "tyres-critical", priority: 2, text: pick([`Box, box. Tyres are almost gone, roughly ${laps} laps left in them.`, `Tyres are falling off a cliff, ${laps} laps at most. Box this lap.`, `Deg is critical, about ${laps} laps left on these tyres. Box, box.`], rng) });
   }
   if (mode === "quiet") return calls;
 
   if (!isValid) {
-    calls.push({ key: "lap-summary", priority: 1, text: `Copy, lap ${input.lapNumber} invalidated. ${formatLapTime(lapTime)}.` });
+    calls.push({ key: "lap-summary", priority: 1, text: pick([`Lap ${input.lapNumber} invalidated. ${formatLapTime(lapTime)}.`, `That one's deleted, track limits. ${formatLapTime(lapTime)}.`, `Copy, lap invalidated. ${formatLapTime(lapTime)}, go again.`], rng) });
   } else if (previousBest <= 0 || lapTime < previousBest - 0.0005) {
     const gain = previousBest > 0 ? ` Up by ${(previousBest - lapTime).toFixed(1)}.` : "";
-    calls.push({ key: "lap-summary", priority: 1, text: `Purple lap, mate. ${formatLapTime(lapTime)}.${gain} Good job.` });
+    const time = formatLapTime(lapTime);
+    calls.push({ key: "lap-summary", priority: 1, text: pick([`Purple lap. ${time}.${gain} Good job.`, `That's a personal best, ${time}.${gain} Lovely stuff.`, `${time}, new best.${gain} Keep that going.`, `Purple, mate. ${time}.${gain}`], rng) });
   } else {
     const delta = lapTime - previousBest;
-    const nudge = delta > 0.5 ? " Push now." : "";
+    const nudge = delta > 0.5 ? pick([" Push now.", " Need a bit more, push.", " Pick it up.", " There's more in it."], rng) : "";
     calls.push({ key: "lap-summary", priority: 1, text: `${formatLapTime(lapTime)}, ${formatDelta(delta)}.${nudge}` });
   }
 
@@ -82,7 +91,7 @@ export function lapCompleteCallouts(mode: EngineerMode, input: LapCompleteInput)
     const parts: string[] = [];
     if (pit.fuelLapsRemaining != null && pit.fuelLapsRemaining >= 2) parts.push(`fuel for ${Math.floor(pit.fuelLapsRemaining)} laps`);
     if (pit.tireLapsToCritical != null && pit.tireLapsToCritical > 2) parts.push(`tyres good for about ${Math.round(pit.tireLapsToCritical)}`);
-    if (parts.length > 0) calls.push({ key: "status", priority: 0, text: `Status check: ${parts.join(", ")}.` });
+    if (parts.length > 0) calls.push({ key: "status", priority: 0, text: `${pick(["Status check", "Quick update", "For info"], rng)}: ${parts.join(", ")}.` });
   }
 
   if (mode === "coach") {
@@ -121,4 +130,15 @@ export function sectorCallout(completedSector: number, sectors: LiveSectorData):
   if (!Number.isFinite(best) || best <= 0) return { key: "sector", priority: 0, text: `${label}, ${time.toFixed(1)}.` };
   const delta = time - best;
   return { key: "sector", priority: 0, text: delta <= 0 ? `${label}, purple, ${formatDelta(delta)}.` : `${label}, ${formatDelta(delta)}.` };
+}
+
+/** Template end-of-session call, used when the AI debrief isn't available. */
+export function sessionEndCallout(position: number | null, isRace: boolean, rng: Rng = Math.random): Callout {
+  let text: string;
+  if (isRace && position === 1) text = pick(["That's P1! Brilliant job.", "P1, you've won it! Fantastic drive.", "Get in there, P1! Superb."], rng);
+  else if (isRace && position !== null && position <= 3) text = pick([`P${position}, that's a podium. Well driven.`, `Podium, P${position}. Great job today.`, `P${position}, on the podium. Good stuff.`], rng);
+  else if (isRace && position !== null && position <= 10) text = pick([`P${position}. Solid result, good points.`, `P${position} at the flag. Decent job, plenty to build on.`], rng);
+  else if (isRace && position !== null) text = pick([`P${position}. Tough one today, we'll regroup.`, `P${position}. Hard race, you kept at it. We'll find more next time.`], rng);
+  else text = pick(["Session complete. Good work, let's review the data.", "That's the session. Useful running, we'll go through it.", "Chequered flag on the session. Nice work out there."], rng);
+  return { key: "session-end", priority: 1, text };
 }

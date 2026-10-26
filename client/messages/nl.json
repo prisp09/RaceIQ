@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Azure Speech-sleutel",
   "engineer_azure_region": "Azure-regio",
   "engineer_azure_active": "Azure Thomas (UK) met volledig radiofilter actief.",
-  "engineer_azure_inactive": "Niet ingesteld: browserstem met ruis en squelch."
+  "engineer_azure_inactive": "Niet ingesteld: browserstem met ruis en squelch.",
+  "engineer_pop_out": "Losmaken",
+  "engineer_maximize": "Maximaliseren",
+  "engineer_close_window": "Venster sluiten",
+  "engineer_popped_out": "De radio staat in een eigen venster.",
+  "engineer_bring_back": "Terughalen"
 }

@@ -3038,5 +3038,10 @@
   "engineer_azure_key": "Azure Speech -avain",
   "engineer_azure_region": "Azure-alue",
   "engineer_azure_active": "Azure Thomas (UK) ja täysi radiosuodatin käytössä.",
-  "engineer_azure_inactive": "Ei asetettu: selaimen ääni kohinan ja squelchin kanssa."
+  "engineer_azure_inactive": "Ei asetettu: selaimen ääni kohinan ja squelchin kanssa.",
+  "engineer_pop_out": "Irrota",
+  "engineer_maximize": "Suurenna",
+  "engineer_close_window": "Sulje ikkuna",
+  "engineer_popped_out": "Radio on omassa ikkunassaan.",
+  "engineer_bring_back": "Palauta"
 }

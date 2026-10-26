@@ -15,6 +15,7 @@ import { Route as AcEvoRouteImport } from './routes/ac-evo'
 import { Route as AccRouteImport } from './routes/acc'
 import { Route as Ams2RouteImport } from './routes/ams2'
 import { Route as DevRouteImport } from './routes/dev'
+import { Route as EngineerRadioRouteImport } from './routes/engineer-radio'
 import { Route as F125RouteImport } from './routes/f125'
 import { Route as Fm23RouteImport } from './routes/fm23'
 import { Route as IracingRouteImport } from './routes/iracing'
@@ -102,6 +103,11 @@ const Ams2Route = Ams2RouteImport.update({
 const DevRoute = DevRouteImport.update({
   id: '/dev',
   path: '/dev',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EngineerRadioRoute = EngineerRadioRouteImport.update({
+  id: '/engineer-radio',
+  path: '/engineer-radio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const F125Route = F125RouteImport.update({
@@ -407,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/acc': typeof AccRouteWithChildren
   '/ams2': typeof Ams2RouteWithChildren
   '/dev': typeof DevRoute
+  '/engineer-radio': typeof EngineerRadioRoute
   '/f125': typeof F125RouteWithChildren
   '/fm23': typeof Fm23RouteWithChildren
   '/iracing': typeof IracingRouteWithChildren
@@ -470,6 +477,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$gameid': typeof GameidRouteWithChildren
   '/dev': typeof DevRoute
+  '/engineer-radio': typeof EngineerRadioRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/overlay': typeof OverlayRoute
@@ -524,6 +532,7 @@ export interface FileRoutesById {
   '/acc': typeof AccRouteWithChildren
   '/ams2': typeof Ams2RouteWithChildren
   '/dev': typeof DevRoute
+  '/engineer-radio': typeof EngineerRadioRoute
   '/f125': typeof F125RouteWithChildren
   '/fm23': typeof Fm23RouteWithChildren
   '/iracing': typeof IracingRouteWithChildren
@@ -592,6 +601,7 @@ export interface FileRouteTypes {
     | '/acc'
     | '/ams2'
     | '/dev'
+    | '/engineer-radio'
     | '/f125'
     | '/fm23'
     | '/iracing'
@@ -655,6 +665,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$gameid'
     | '/dev'
+    | '/engineer-radio'
     | '/login'
     | '/onboarding'
     | '/overlay'
@@ -708,6 +719,7 @@ export interface FileRouteTypes {
     | '/acc'
     | '/ams2'
     | '/dev'
+    | '/engineer-radio'
     | '/f125'
     | '/fm23'
     | '/iracing'
@@ -775,6 +787,7 @@ export interface RootRouteChildren {
   AccRoute: typeof AccRouteWithChildren
   Ams2Route: typeof Ams2RouteWithChildren
   DevRoute: typeof DevRoute
+  EngineerRadioRoute: typeof EngineerRadioRoute
   F125Route: typeof F125RouteWithChildren
   Fm23Route: typeof Fm23RouteWithChildren
   IracingRoute: typeof IracingRouteWithChildren
@@ -830,6 +843,13 @@ declare module '@tanstack/react-router' {
       path: '/dev'
       fullPath: '/dev'
       preLoaderRoute: typeof DevRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/engineer-radio': {
+      id: '/engineer-radio'
+      path: '/engineer-radio'
+      fullPath: '/engineer-radio'
+      preLoaderRoute: typeof EngineerRadioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f125': {
@@ -1497,6 +1517,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccRoute: AccRouteWithChildren,
   Ams2Route: Ams2RouteWithChildren,
   DevRoute: DevRoute,
+  EngineerRadioRoute: EngineerRadioRoute,
   F125Route: F125RouteWithChildren,
   Fm23Route: Fm23RouteWithChildren,
   IracingRoute: IracingRouteWithChildren,

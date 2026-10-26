@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Mic, Radio, RotateCcw, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Maximize2, Mic, Radio, RotateCcw, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authenticatedFetch } from "@/lib/rpc";
 import { useSaveSettings, useSettings } from "@/hooks/settings";
 import { m } from "@/paraglide/messages";
 import { EngineerModePicker } from "./EngineerModePicker";
+import { maximizeWindow } from "./EngineerDrawer";
 import { EngineerSpeaker } from "./engineer-voice";
 import { WebSpeechToText, type SpeechToText } from "./speech-to-text";
 
@@ -15,10 +16,19 @@ type Mode = "quiet" | "normal" | "coach" | "co-driver";
 type SessionType = "practice" | "qualifying" | "race";
 
 const MAX_LINES = 8;
+const WINDOW_MAX_LINES = 200;
 
 export const ENGINEER_EVENT = "raceiq-engineer";
 
-export function EngineerRadio() {
+export type EngineerRadioProps = {
+  /** "drawer": small panel at the bottom left. "window": fills the pop-out window. */
+  variant?: "drawer" | "window";
+  onPopOut?: () => void;
+};
+
+export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioProps = {}) {
+  const inWindow = variant === "window";
+  const maxLines = inWindow ? WINDOW_MAX_LINES : MAX_LINES;
   const { displaySettings } = useSettings();
   const saveSettings = useSaveSettings();
   const mode: Mode = displaySettings.engineerMode ?? "normal";
@@ -65,8 +75,8 @@ export function EngineerRadio() {
   micModeRef.current = micMode;
 
   const addLine = useCallback((line: Line) => {
-    setLines((current) => current.some((existing) => existing.id === line.id) ? current : [...current, line].slice(-MAX_LINES));
-  }, []);
+    setLines((current) => current.some((existing) => existing.id === line.id) ? current : [...current, line].slice(-maxLines));
+  }, [maxLines]);
 
   const ask = useCallback(async (text: string) => {
     const question = text.trim();
@@ -116,7 +126,7 @@ export function EngineerRadio() {
       setSessionType(state.sessionType);
       setLive(state.live);
       setThinking(state.thinking);
-      setLines(state.transcript.slice(-MAX_LINES));
+      setLines(state.transcript.slice(-maxLines));
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -192,8 +202,8 @@ export function EngineerRadio() {
   const binding = displaySettings.engineerPushToTalk?.name;
 
   return (
-    <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] z-40 flex w-[min(22rem,calc(100%-2rem))] flex-col items-start">
-      <div className="pointer-events-auto w-full rounded border border-app-border-input bg-app-surface-alt text-app-text shadow-lg">
+    <div className={inWindow ? "flex h-full flex-col" : "pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] z-40 flex w-[min(22rem,calc(100%-2rem))] flex-col items-start"}>
+      <div className={inWindow ? "flex min-h-0 flex-1 flex-col bg-app-surface-alt text-app-text" : "pointer-events-auto w-full rounded border border-app-border-input bg-app-surface-alt text-app-text shadow-lg"}>
         <div className="flex items-center gap-2 border-b border-app-border-input px-3 py-2">
           <Radio className={`size-4 ${live ? "text-status-success" : "text-app-text-muted"}`} aria-hidden="true" />
           <span className="text-sm font-semibold">{m.engineer_title()}</span>
@@ -203,13 +213,29 @@ export function EngineerRadio() {
             <Button variant="app-ghost" size="icon-sm" onClick={() => setConfirmingNewSession((value) => !value)} aria-label={m.engineer_new_session()} title={m.engineer_new_session()}>
               <RotateCcw className="size-4" />
             </Button>
-            <Button variant="app-ghost" size="icon-sm" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? m.engineer_expand() : m.engineer_collapse()}>
-              {collapsed ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-            </Button>
+            {!inWindow && onPopOut && (
+              <Button variant="app-ghost" size="icon-sm" onClick={onPopOut} aria-label={m.engineer_pop_out()} title={m.engineer_pop_out()}>
+                <ExternalLink className="size-4" />
+              </Button>
+            )}
+            {inWindow ? (
+              <>
+                <Button variant="app-ghost" size="icon-sm" onClick={maximizeWindow} aria-label={m.engineer_maximize()} title={m.engineer_maximize()}>
+                  <Maximize2 className="size-4" />
+                </Button>
+                <Button variant="app-ghost" size="icon-sm" onClick={() => window.close()} aria-label={m.engineer_close_window()} title={m.engineer_close_window()}>
+                  <X className="size-4" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="app-ghost" size="icon-sm" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? m.engineer_expand() : m.engineer_collapse()}>
+                {collapsed ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+              </Button>
+            )}
           </div>
         </div>
-        {!collapsed && (
-          <div className="flex flex-col gap-2 p-3">
+        {(!collapsed || inWindow) && (
+          <div className={inWindow ? "flex min-h-0 flex-1 flex-col gap-2 p-3" : "flex flex-col gap-2 p-3"}>
             {micMode !== "off" && micPermission !== "granted" && micPermission !== "unknown" && (
               <div role="alert" className="flex items-center justify-between gap-2 rounded border border-status-warning/40 px-2 py-1.5 text-xs text-app-text">
                 <span>{micPermission === "denied" ? m.engineer_mic_permission_denied() : m.engineer_mic_permission_needed()}</span>
@@ -233,7 +259,7 @@ export function EngineerRadio() {
                 {m.engineer_start_radio()}
               </Button>
             )}
-            <ol className="flex max-h-48 flex-col gap-1 overflow-y-auto text-xs leading-snug" aria-label={m.engineer_transcript_label()}>
+            <ol className={inWindow ? "flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto text-sm leading-snug" : "flex max-h-48 flex-col gap-1 overflow-y-auto text-xs leading-snug"} aria-label={m.engineer_transcript_label()}>
               {lines.length === 0 && <li className="text-app-text-muted">{m.engineer_transcript_empty()}</li>}
               {lines.map((line) => (
                 <li key={line.id} className={line.from === "engineer" ? "text-app-text" : "text-app-text-secondary"}>

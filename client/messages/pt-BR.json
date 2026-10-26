@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Chave do Azure Speech",
   "engineer_azure_region": "Região do Azure",
   "engineer_azure_active": "Usando Azure Thomas (UK) com o filtro de rádio completo.",
-  "engineer_azure_inactive": "Não configurado: voz do navegador com estática e squelch."
+  "engineer_azure_inactive": "Não configurado: voz do navegador com estática e squelch.",
+  "engineer_pop_out": "Destacar",
+  "engineer_maximize": "Maximizar",
+  "engineer_close_window": "Fechar janela",
+  "engineer_popped_out": "O rádio está em uma janela própria.",
+  "engineer_bring_back": "Trazer de volta"
 }

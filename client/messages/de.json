@@ -3041,5 +3041,10 @@
   "engineer_azure_key": "Azure-Speech-Schlüssel",
   "engineer_azure_region": "Azure-Region",
   "engineer_azure_active": "Azure Thomas (UK) mit vollem Funkfilter aktiv.",
-  "engineer_azure_inactive": "Nicht eingerichtet: Browser-Stimme mit Rauschen und Squelch."
+  "engineer_azure_inactive": "Nicht eingerichtet: Browser-Stimme mit Rauschen und Squelch.",
+  "engineer_pop_out": "Auslösen",
+  "engineer_maximize": "Maximieren",
+  "engineer_close_window": "Fenster schließen",
+  "engineer_popped_out": "Der Funk läuft in einem eigenen Fenster.",
+  "engineer_bring_back": "Zurückholen"
 }

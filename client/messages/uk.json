@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Ключ Azure Speech",
   "engineer_azure_region": "Регіон Azure",
   "engineer_azure_active": "Використовується Azure Thomas (UK) з повним радіофільтром.",
-  "engineer_azure_inactive": "Не налаштовано: голос браузера з шумом і сквелчем."
+  "engineer_azure_inactive": "Не налаштовано: голос браузера з шумом і сквелчем.",
+  "engineer_pop_out": "Відкріпити",
+  "engineer_maximize": "Розгорнути",
+  "engineer_close_window": "Закрити вікно",
+  "engineer_popped_out": "Радіо відкрито в окремому вікні.",
+  "engineer_bring_back": "Повернути"
 }

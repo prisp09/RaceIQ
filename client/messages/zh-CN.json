@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Azure Speech 密钥",
   "engineer_azure_region": "Azure 区域",
   "engineer_azure_active": "正在使用 Azure Thomas (UK) 和完整无线电滤镜。",
-  "engineer_azure_inactive": "未设置：使用浏览器语音加杂音和静噪。"
+  "engineer_azure_inactive": "未设置：使用浏览器语音加杂音和静噪。",
+  "engineer_pop_out": "弹出",
+  "engineer_maximize": "最大化",
+  "engineer_close_window": "关闭窗口",
+  "engineer_popped_out": "无线电已在独立窗口中打开。",
+  "engineer_bring_back": "移回此处"
 }

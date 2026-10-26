@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Klucz Azure Speech",
   "engineer_azure_region": "Region Azure",
   "engineer_azure_active": "Używany Azure Thomas (UK) z pełnym filtrem radiowym.",
-  "engineer_azure_inactive": "Nie ustawiono: głos przeglądarki z szumem i squelchem."
+  "engineer_azure_inactive": "Nie ustawiono: głos przeglądarki z szumem i squelchem.",
+  "engineer_pop_out": "Odepnij",
+  "engineer_maximize": "Maksymalizuj",
+  "engineer_close_window": "Zamknij okno",
+  "engineer_popped_out": "Radio jest w osobnym oknie.",
+  "engineer_bring_back": "Przywróć"
 }

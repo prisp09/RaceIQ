@@ -3037,5 +3037,10 @@
   "engineer_azure_key": "Azure Speech キー",
   "engineer_azure_region": "Azure リージョン",
   "engineer_azure_active": "Azure Thomas (UK) と無線フィルターを使用中。",
-  "engineer_azure_inactive": "未設定: ブラウザーの声にノイズとスケルチを追加。"
+  "engineer_azure_inactive": "未設定: ブラウザーの声にノイズとスケルチを追加。",
+  "engineer_pop_out": "別ウィンドウで開く",
+  "engineer_maximize": "最大化",
+  "engineer_close_window": "ウィンドウを閉じる",
+  "engineer_popped_out": "無線は別ウィンドウで開いています。",
+  "engineer_bring_back": "元に戻す"
 }
