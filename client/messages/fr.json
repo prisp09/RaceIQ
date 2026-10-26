@@ -3020,7 +3020,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Utilise des jetons IA",
+  "engineer_mode_uses_ai": "Utilise l'IA",
   "engineer_mode_codriver": "Copilote",
   "engineer_mode_codriver_desc": "Conseils avant chaque virage, basés sur ton dernier tour.",
   "engineer_tip_lead": "Moment des conseils : {value} s avant le freinage",

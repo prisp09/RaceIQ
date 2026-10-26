@@ -3024,7 +3024,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Verbraucht KI-Tokens",
+  "engineer_mode_uses_ai": "Nutzt KI",
   "engineer_mode_codriver": "Beifahrer",
   "engineer_mode_codriver_desc": "Tipps vor jeder Kurve, basierend auf deiner letzten Runde.",
   "engineer_tip_lead": "Tipp-Timing: {value} s vor dem Bremsen",

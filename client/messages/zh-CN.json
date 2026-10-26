@@ -3020,7 +3020,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "使用 AI 令牌",
+  "engineer_mode_uses_ai": "使用 AI",
   "engineer_mode_codriver": "副驾驶",
   "engineer_mode_codriver_desc": "根据上一圈，在每个弯前给出提示。",
   "engineer_tip_lead": "提示时机：刹车前 {value} 秒",

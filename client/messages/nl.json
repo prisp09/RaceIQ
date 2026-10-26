@@ -3020,7 +3020,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Gebruikt AI-tokens",
+  "engineer_mode_uses_ai": "Gebruikt AI",
   "engineer_mode_codriver": "Bijrijder",
   "engineer_mode_codriver_desc": "Tips vóór elke bocht, op basis van je vorige ronde.",
   "engineer_tip_lead": "Timing tips: {value} s voor het remmen",

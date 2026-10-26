@@ -3020,7 +3020,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Zużywa tokeny AI",
+  "engineer_mode_uses_ai": "Używa AI",
   "engineer_mode_codriver": "Pilot",
   "engineer_mode_codriver_desc": "Wskazówki przed każdym zakrętem na podstawie ostatniego okrążenia.",
   "engineer_tip_lead": "Moment wskazówek: {value} s przed hamowaniem",

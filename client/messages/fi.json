@@ -3021,7 +3021,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Käyttää tekoälytokeneita",
+  "engineer_mode_uses_ai": "Käyttää tekoälyä",
   "engineer_mode_codriver": "Kartturi",
   "engineer_mode_codriver_desc": "Vinkit ennen jokaista mutkaa edellisen kierroksen perusteella.",
   "engineer_tip_lead": "Vinkkien ajoitus: {value} s ennen jarrutusta",

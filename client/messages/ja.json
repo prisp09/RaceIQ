@@ -3020,7 +3020,7 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "AIトークンを使用",
+  "engineer_mode_uses_ai": "AIを使用",
   "engineer_mode_codriver": "コ・ドライバー",
   "engineer_mode_codriver_desc": "前の周をもとに、各コーナーの手前でアドバイス。",
   "engineer_tip_lead": "アドバイスのタイミング: ブレーキの {value} 秒前",
