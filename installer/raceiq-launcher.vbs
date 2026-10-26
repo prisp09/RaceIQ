@@ -37,7 +37,14 @@ For attempt = 1 To 60
 Next
 
 If ready Then
-    WshShell.Run dashboardUrl, 1, False
+    ' Prefer Microsoft Edge (natural UK voices for the race engineer); fall back to the default browser.
+    On Error Resume Next
+    WshShell.Run "msedge.exe """ & dashboardUrl & """", 1, False
+    If Err.Number <> 0 Then
+        Err.Clear
+        WshShell.Run dashboardUrl, 1, False
+    End If
+    On Error GoTo 0
 Else
     MsgBox "RaceIQ did not become ready. Check the RaceIQ log and try again.", vbExclamation, "RaceIQ"
     WScript.Quit 1

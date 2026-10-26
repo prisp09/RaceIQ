@@ -27,6 +27,8 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $url = '${url.replace(/'/g, "''")}'
+# Prefer Microsoft Edge (its natural UK voices suit the race engineer); fall back to the default browser.
+function Open-RaceIQ { try { Start-Process msedge.exe -ArgumentList $url -ErrorAction Stop } catch { Start-Process $url } }
 $cmdFile = '${commandFilePs}'
 
 # Extract icon from the running exe
@@ -42,7 +44,7 @@ $menu = New-Object System.Windows.Forms.ContextMenuStrip
 
 $openItem = New-Object System.Windows.Forms.ToolStripMenuItem
 $openItem.Text = "Open RaceIQ"
-$openItem.add_Click({ Start-Process $url })
+$openItem.add_Click({ Open-RaceIQ })
 $menu.Items.Add($openItem) | Out-Null
 
 $consoleItem = New-Object System.Windows.Forms.ToolStripMenuItem
@@ -80,7 +82,7 @@ $exitItem.add_Click({
 $menu.Items.Add($exitItem) | Out-Null
 
 $tray.ContextMenuStrip = $menu
-$tray.add_DoubleClick({ Start-Process $url })
+$tray.add_DoubleClick({ Open-RaceIQ })
 
 # Poll command file every 5s for server->tray IPC
 $timer = New-Object System.Windows.Forms.Timer
