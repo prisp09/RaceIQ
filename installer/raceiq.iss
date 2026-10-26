@@ -121,7 +121,7 @@ Name: "{userprograms}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstall
 Name: "{userdesktop}\{#MyAppName}"; Filename: "wscript.exe"; Parameters: """{app}\raceiq-launcher.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "wscript.exe"; Parameters: """{app}\raceiq-launcher.vbs"""; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall runasoriginaluser
+Filename: "wscript.exe"; Parameters: """{app}\raceiq-launcher.vbs"""; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 Filename: "wscript.exe"; Parameters: """{app}\raceiq-launcher.vbs"""; WorkingDir: "{app}"; Flags: nowait skipifnotsilent runasoriginaluser
 
 [UninstallRun]

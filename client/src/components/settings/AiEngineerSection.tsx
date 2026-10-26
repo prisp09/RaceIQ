@@ -4,56 +4,118 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { authenticatedFetch } from "@/lib/rpc";
 import { useSaveSettings, useSettings } from "@/hooks/settings";
+import type { DisplaySettings } from "@/stores/telemetry";
 import { m } from "@/paraglide/messages";
 import { EngineerSpeaker, englishVoices, pickVoice } from "@/components/engineer/engineer-voice";
 import { AiModelPicker } from "./AiPickers";
-import { defaultModelForProvider } from "./recommended-model";
+import { defaultModelForProvider, modelsOrFallback } from "./recommended-model";
 
 type Provider = { id: string; name: string };
 type Model = { id: string; name: string };
+type EngineerDraft = {
+  engineerEnabled: boolean;
+  engineerMode: NonNullable<DisplaySettings["engineerMode"]>;
+  engineerMicMode: NonNullable<DisplaySettings["engineerMicMode"]>;
+  engineerPushToTalk: DisplaySettings["engineerPushToTalk"] | null;
+  engineerVoiceURI: string | null;
+  engineerVoiceRate: number;
+  engineerVoicePitch: number;
+  engineerRadioFilter: boolean;
+  engineerProvider: NonNullable<DisplaySettings["engineerProvider"]>;
+  engineerModel: string;
+};
 
 const selectClass = "w-full max-w-xs rounded border border-app-border-input bg-app-surface px-3 py-1.5 text-sm text-app-text";
+const SLIDER_SAVE_DELAY_MS = 400;
+
+function draftFrom(settings: Partial<DisplaySettings>): EngineerDraft {
+  return {
+    engineerEnabled: settings.engineerEnabled ?? false,
+    engineerMode: settings.engineerMode ?? "normal",
+    engineerMicMode: settings.engineerMicMode ?? "push-to-talk",
+    engineerPushToTalk: settings.engineerPushToTalk ?? null,
+    engineerVoiceURI: settings.engineerVoiceURI ?? null,
+    engineerVoiceRate: settings.engineerVoiceRate ?? 0.95,
+    engineerVoicePitch: settings.engineerVoicePitch ?? 0.85,
+    engineerRadioFilter: settings.engineerRadioFilter ?? true,
+    engineerProvider: settings.engineerProvider ?? "",
+    engineerModel: settings.engineerModel ?? "",
+  };
+}
 
 export function AiEngineerSection() {
-  const { displaySettings } = useSettings();
+  const { displaySettings, settingsLoaded } = useSettings();
   const save = useSaveSettings();
-  const enabled = displaySettings.engineerEnabled ?? false;
-  const provider = displaySettings.engineerProvider ?? "";
+  // Controls read local state so clicks apply instantly; saves run in the background.
+  const [draft, setDraft] = useState<EngineerDraft>(() => draftFrom(displaySettings as Partial<DisplaySettings>));
+  const synced = useRef(false);
+  useEffect(() => {
+    if (synced.current || !settingsLoaded) return;
+    synced.current = true;
+    setDraft(draftFrom(displaySettings as Partial<DisplaySettings>));
+  }, [settingsLoaded, displaySettings]);
+
   const [binding, setBinding] = useState(false);
   const [bindError, setBindError] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => englishVoices());
   const speaker = useRef<EngineerSpeaker | null>(null);
+  const sliderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSlider = useRef<Partial<EngineerDraft>>({});
 
   useEffect(() => {
     if (typeof speechSynthesis === "undefined") return;
-    const update = () => setVoices(englishVoices());
+    const update = () => setVoices((current) => {
+      const next = englishVoices();
+      return next.length === current.length && next.every((voice, index) => voice.voiceURI === current[index]?.voiceURI) ? current : next;
+    });
     speechSynthesis.addEventListener("voiceschanged", update);
     update();
     return () => speechSynthesis.removeEventListener("voiceschanged", update);
   }, []);
 
+  useEffect(() => () => { if (sliderTimer.current) clearTimeout(sliderTimer.current); }, []);
+
+  const provider = draft.engineerProvider;
   const { data: providers = [] } = useQuery({
     queryKey: ["ai-providers"],
     queryFn: async () => (await (await authenticatedFetch("/api/ai-providers")).json()) as Provider[],
+    staleTime: Infinity,
   });
-  const { data: models = [] } = useQuery({
-    queryKey: ["ai-models", provider, "engineer"],
+  const { data: fetchedModels = [] } = useQuery({
+    queryKey: ["engineer-ai-models", provider],
     enabled: provider !== "",
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       const body = (await (await authenticatedFetch(`/api/ai-models?providers=${encodeURIComponent(provider)}`)).json()) as Record<string, Model[]>;
       return body[provider] ?? [];
     },
   });
+  const models = modelsOrFallback(provider, fetchedModels);
 
-  const update = (patch: Record<string, unknown>) => save.mutate(patch);
-  const selectedVoice = useMemo(() => pickVoice(displaySettings.engineerVoiceURI ?? null), [displaySettings.engineerVoiceURI, voices]);
+  const update = (patch: Partial<EngineerDraft>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+    save.mutate(patch);
+  };
+  const updateSlider = (patch: Partial<EngineerDraft>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+    pendingSlider.current = { ...pendingSlider.current, ...patch };
+    if (sliderTimer.current) clearTimeout(sliderTimer.current);
+    sliderTimer.current = setTimeout(() => {
+      const pending = pendingSlider.current;
+      pendingSlider.current = {};
+      save.mutate(pending);
+    }, SLIDER_SAVE_DELAY_MS);
+  };
+
+  const selectedVoice = useMemo(() => pickVoice(draft.engineerVoiceURI), [draft.engineerVoiceURI, voices]);
+  const hasBritishVoice = useMemo(() => voices.some((voice) => voice.lang.toLowerCase() === "en-gb"), [voices]);
 
   const bind = async () => {
     setBinding(true);
     setBindError(null);
     try {
       const res = await authenticatedFetch("/api/engineer/bind", { method: "POST" });
-      const body = await res.json() as { binding?: unknown; error?: string };
+      const body = await res.json() as { binding?: EngineerDraft["engineerPushToTalk"]; error?: string };
       if (res.ok && body.binding) update({ engineerPushToTalk: body.binding });
       else setBindError(body.error ?? m.engineer_bind_failed());
     } catch {
@@ -65,13 +127,9 @@ export function AiEngineerSection() {
 
   const testVoice = () => {
     speaker.current ??= new EngineerSpeaker(() => {});
-    speaker.current.configure({
-      voiceURI: displaySettings.engineerVoiceURI ?? null,
-      rate: displaySettings.engineerVoiceRate ?? 0.95,
-      pitch: displaySettings.engineerVoicePitch ?? 0.85,
-      radioFilter: displaySettings.engineerRadioFilter ?? true,
-    });
+    speaker.current.configure({ voiceURI: draft.engineerVoiceURI, rate: draft.engineerVoiceRate, pitch: draft.engineerVoicePitch, radioFilter: draft.engineerRadioFilter });
     speaker.current.unlock();
+    speaker.current.stop();
     speaker.current.say("preview", m.engineer_voice_preview_line(), 1);
   };
 
@@ -82,15 +140,15 @@ export function AiEngineerSection() {
         <p className="mt-1 max-w-xl text-xs text-app-text-muted">{m.engineer_settings_desc()}</p>
       </div>
       <label className="flex items-center gap-2 text-sm text-app-text">
-        <input id="engineer-enabled" type="checkbox" checked={enabled} onChange={(event) => update({ engineerEnabled: event.target.checked })} className="accent-app-accent" />
+        <input id="engineer-enabled" type="checkbox" checked={draft.engineerEnabled} onChange={(event) => update({ engineerEnabled: event.target.checked })} className="accent-app-accent" />
         {m.engineer_enable()}
       </label>
-      {enabled && (
+      {draft.engineerEnabled && (
         <div className="space-y-4">
           <div className="grid max-w-xl gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="engineer-mode" className="mb-1 block text-xs text-app-text-muted">{m.engineer_mode_label()}</Label>
-              <select id="engineer-mode" className={selectClass} value={displaySettings.engineerMode ?? "normal"} onChange={(event) => update({ engineerMode: event.target.value })}>
+              <select id="engineer-mode" className={selectClass} value={draft.engineerMode} onChange={(event) => update({ engineerMode: event.target.value as EngineerDraft["engineerMode"] })}>
                 <option value="quiet">{m.engineer_mode_quiet_desc()}</option>
                 <option value="normal">{m.engineer_mode_normal_desc()}</option>
                 <option value="coach">{m.engineer_mode_coach_desc()}</option>
@@ -98,7 +156,7 @@ export function AiEngineerSection() {
             </div>
             <div>
               <Label htmlFor="engineer-mic" className="mb-1 block text-xs text-app-text-muted">{m.engineer_mic_label()}</Label>
-              <select id="engineer-mic" className={selectClass} value={displaySettings.engineerMicMode ?? "push-to-talk"} onChange={(event) => update({ engineerMicMode: event.target.value })}>
+              <select id="engineer-mic" className={selectClass} value={draft.engineerMicMode} onChange={(event) => update({ engineerMicMode: event.target.value as EngineerDraft["engineerMicMode"] })}>
                 <option value="push-to-talk">{m.engineer_mic_ptt()}</option>
                 <option value="open-mic">{m.engineer_mic_open()}</option>
                 <option value="off">{m.engineer_mic_off()}</option>
@@ -110,12 +168,12 @@ export function AiEngineerSection() {
             <Label className="mb-1 block text-xs text-app-text-muted">{m.engineer_ptt_label()}</Label>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded border border-app-border-input bg-app-surface px-2 py-1 text-sm text-app-text">
-                {displaySettings.engineerPushToTalk?.name ?? m.engineer_ptt_none()}
+                {draft.engineerPushToTalk?.name ?? m.engineer_ptt_none()}
               </span>
               <Button variant="app-outline" size="app-sm" onClick={() => void bind()} disabled={binding}>
                 {binding ? m.engineer_ptt_waiting() : m.engineer_ptt_set()}
               </Button>
-              {displaySettings.engineerPushToTalk && (
+              {draft.engineerPushToTalk && (
                 <Button variant="app-ghost" size="app-sm" onClick={() => update({ engineerPushToTalk: null })}>{m.engineer_ptt_clear()}</Button>
               )}
             </div>
@@ -126,26 +184,24 @@ export function AiEngineerSection() {
           <div className="grid max-w-xl gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="engineer-voice" className="mb-1 block text-xs text-app-text-muted">{m.engineer_voice_label()}</Label>
-              <select id="engineer-voice" className={selectClass} value={displaySettings.engineerVoiceURI ?? ""} onChange={(event) => update({ engineerVoiceURI: event.target.value || null })}>
+              <select id="engineer-voice" className={selectClass} value={draft.engineerVoiceURI ?? ""} onChange={(event) => update({ engineerVoiceURI: event.target.value || null })}>
                 <option value="">{m.engineer_voice_auto({ voice: selectedVoice?.name ?? m.engineer_voice_none() })}</option>
                 {voices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} ({voice.lang})</option>)}
               </select>
-              {voices.length > 0 && !voices.some((voice) => voice.lang.toLowerCase() === "en-gb") && (
-                <p className="mt-1 text-xs text-app-text-muted">{m.engineer_voice_no_british()}</p>
-              )}
+              {voices.length > 0 && !hasBritishVoice && <p className="mt-1 text-xs text-app-text-muted">{m.engineer_voice_no_british()}</p>}
             </div>
             <div>
-              <Label htmlFor="engineer-rate" className="mb-1 block text-xs text-app-text-muted">{m.engineer_voice_rate({ value: (displaySettings.engineerVoiceRate ?? 0.95).toFixed(2) })}</Label>
-              <input id="engineer-rate" type="range" min={0.7} max={1.3} step={0.05} value={displaySettings.engineerVoiceRate ?? 0.95} onChange={(event) => update({ engineerVoiceRate: Number(event.target.value) })} className="w-full accent-app-accent" />
+              <Label htmlFor="engineer-rate" className="mb-1 block text-xs text-app-text-muted">{m.engineer_voice_rate({ value: draft.engineerVoiceRate.toFixed(2) })}</Label>
+              <input id="engineer-rate" type="range" min={0.7} max={1.3} step={0.05} value={draft.engineerVoiceRate} onChange={(event) => updateSlider({ engineerVoiceRate: Number(event.target.value) })} className="w-full accent-app-accent" />
             </div>
             <div>
-              <Label htmlFor="engineer-pitch" className="mb-1 block text-xs text-app-text-muted">{m.engineer_voice_pitch({ value: (displaySettings.engineerVoicePitch ?? 0.85).toFixed(2) })}</Label>
-              <input id="engineer-pitch" type="range" min={0.5} max={1.5} step={0.05} value={displaySettings.engineerVoicePitch ?? 0.85} onChange={(event) => update({ engineerVoicePitch: Number(event.target.value) })} className="w-full accent-app-accent" />
+              <Label htmlFor="engineer-pitch" className="mb-1 block text-xs text-app-text-muted">{m.engineer_voice_pitch({ value: draft.engineerVoicePitch.toFixed(2) })}</Label>
+              <input id="engineer-pitch" type="range" min={0.5} max={1.5} step={0.05} value={draft.engineerVoicePitch} onChange={(event) => updateSlider({ engineerVoicePitch: Number(event.target.value) })} className="w-full accent-app-accent" />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm text-app-text">
-              <input id="engineer-radio-filter" type="checkbox" checked={displaySettings.engineerRadioFilter ?? true} onChange={(event) => update({ engineerRadioFilter: event.target.checked })} className="accent-app-accent" />
+              <input id="engineer-radio-filter" type="checkbox" checked={draft.engineerRadioFilter} onChange={(event) => update({ engineerRadioFilter: event.target.checked })} className="accent-app-accent" />
               {m.engineer_radio_filter()}
             </label>
             <Button variant="app-outline" size="app-sm" onClick={testVoice}>{m.engineer_voice_test()}</Button>
@@ -158,7 +214,10 @@ export function AiEngineerSection() {
                 id="engineer-provider"
                 className={selectClass}
                 value={provider}
-                onChange={(event) => update({ engineerProvider: event.target.value, engineerModel: defaultModelForProvider(event.target.value) })}
+                onChange={(event) => {
+                  const next = event.target.value as EngineerDraft["engineerProvider"];
+                  update({ engineerProvider: next, engineerModel: defaultModelForProvider(next) });
+                }}
               >
                 <option value="">{m.engineer_provider_chat()}</option>
                 {providers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -167,7 +226,7 @@ export function AiEngineerSection() {
             {provider !== "" && (
               <div>
                 <Label htmlFor="engineer-model" className="mb-1 block text-xs text-app-text-muted">{m.ai_model_label()}</Label>
-                <AiModelPicker id="engineer-model" value={displaySettings.engineerModel ?? ""} onChange={(value) => update({ engineerModel: value })} models={models} />
+                <AiModelPicker id="engineer-model" value={draft.engineerModel} onChange={(value) => update({ engineerModel: value })} models={models} />
               </div>
             )}
           </div>

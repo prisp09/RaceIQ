@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { emitLiveNotification } from "@raceiq/backend-core/live-engineer/tap";
+import { loadSettings, saveSettings } from "@raceiq/backend-core/runtime/config/settings";
+import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
 import { EngineerService } from "../../src/engineer/service";
 
 describe("race engineer reply directives", () => {
@@ -19,10 +22,7 @@ describe("race engineer reply directives", () => {
 });
 
 describe("race engineer lap calls", () => {
-  test("lap-saved produces a lap summary, then a purple lap", async () => {
-    const { loadSettings, saveSettings } = await import("@raceiq/backend-core/runtime/config/settings");
-    const { wsManager } = await import("@raceiq/backend-core/runtime/websocket-manager");
-    const { emitLiveNotification } = await import("@raceiq/backend-core/live-engineer/tap");
+  test("lap-saved produces a lap summary, then a purple lap", () => {
     saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "normal" });
     const said: string[] = [];
     const original = wsManager.broadcastNotification.bind(wsManager);

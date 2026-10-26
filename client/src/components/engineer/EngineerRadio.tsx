@@ -114,10 +114,10 @@ export function EngineerRadio() {
   }, [addLine]);
 
   useEffect(() => {
+    // Only open mic is driven by state; push to talk starts and stops on press/release.
     const stt = sttRef.current;
-    if (!started || !stt) return;
-    if (micMode === "open-mic") stt.startContinuous();
-    else stt.stop();
+    if (!started || !stt || micMode !== "open-mic") return;
+    stt.startContinuous();
     return () => stt.stop();
   }, [started, micMode]);
 

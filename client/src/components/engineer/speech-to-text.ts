@@ -42,7 +42,9 @@ export class WebSpeechToText implements SpeechToText {
   private mode: "idle" | "utterance" | "continuous" = "idle";
   private paused = false;
   private pending = "";
+  private interim = "";
   private stopping = false;
+  private delivered = 0;
 
   private readonly events: SpeechToTextEvents;
   private readonly lang: string;
@@ -58,6 +60,7 @@ export class WebSpeechToText implements SpeechToText {
 
   startUtterance(): void {
     this.pending = "";
+    this.interim = "";
     this.begin("utterance");
   }
 
@@ -100,17 +103,25 @@ export class WebSpeechToText implements SpeechToText {
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.onstart = () => this.events.onListeningChange?.(true);
+    this.delivered = 0;
     recognition.onresult = (event) => {
+      // Rebuild from every result: some engines restart resultIndex or never mark the last phrase final.
+      let finalText = "";
       let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i]!;
         const text = result[0]?.transcript ?? "";
         if (result.isFinal) {
-          if (this.mode === "continuous") { if (!this.paused && text.trim()) this.events.onFinal(text.trim()); }
-          else this.pending = `${this.pending} ${text}`.trim();
-        } else interim += text;
+          if (this.mode === "continuous" && i >= this.delivered) {
+            this.delivered = i + 1;
+            if (!this.paused && text.trim()) this.events.onFinal(text.trim());
+          }
+          finalText += ` ${text}`;
+        } else interim += ` ${text}`;
       }
-      if (interim) this.events.onInterim?.(interim.trim());
+      this.pending = finalText.trim();
+      this.interim = interim.trim();
+      if (this.interim) this.events.onInterim?.(this.interim);
     };
     recognition.onerror = (event) => {
       if (event.error === "no-speech" || event.error === "aborted") return;
@@ -121,8 +132,10 @@ export class WebSpeechToText implements SpeechToText {
       this.events.onListeningChange?.(false);
       if (this.mode === "utterance") {
         this.mode = "idle";
-        const text = this.pending.trim();
+        // Releasing push-to-talk can end recognition before the last phrase is final; keep what was heard.
+        const text = `${this.pending} ${this.interim}`.trim();
         this.pending = "";
+        this.interim = "";
         if (text) this.events.onFinal(text);
         else if (!this.stopping) this.events.onError?.("Didn't catch that.");
       } else if (this.mode === "continuous" && !this.paused) {
