@@ -20,6 +20,7 @@ export function RecordingLayoutMigration({ compact = false, onSuccessDismissed, 
   });
   const [deferred, setDeferred] = useState(false);
   const [successDismissed, setSuccessDismissed] = useState(false);
+  const [dockClosed, setDockClosed] = useState(false);
   const [observedRunning, setObservedRunning] = useState(false);
   const [choiceOpen, setChoiceOpen] = useState(false);
   const [chooseNew, setChooseNew] = useState(false);
@@ -39,7 +40,7 @@ export function RecordingLayoutMigration({ compact = false, onSuccessDismissed, 
   const previews = previewRecordingDirectories(target);
   const selecting = selectDirectory.isPending;
   const docked = !compact && (running || completed);
-  const dialogOpen = compact ? choiceOpen && !running && !completed : running || (hasWork && !completed && !deferred) || (completed && !successDismissed);
+  const dialogOpen = compact ? choiceOpen && !running && !completed : (running && !dockClosed) || (hasWork && !running && !completed && !deferred) || (completed && !successDismissed);
   const percent = progress && progress.total > 0 ? Math.min(100, Math.round(progress.done / progress.total * 100)) : 0;
   const errorCode = start.error && "code" in start.error ? String(start.error.code) : "";
   const errorText = errorCode === "INVALID_DIRECTORY" ? m.storage_directory_error_invalid_directory()
@@ -69,9 +70,10 @@ export function RecordingLayoutMigration({ compact = false, onSuccessDismissed, 
     {!retryable && <ArrowRight aria-hidden="true" className="size-4" />}
   </Button>;
   const dialog = <Dialog open={dialogOpen} modal={!docked} onOpenChange={(open) => {
+    if (!open && docked) { if (running) setDockClosed(true); else setSuccessDismissed(true); return; }
     if (!open && !running && !completed && !selecting) { if (compact) setChoiceOpen(false); else setDeferred(true); }
   }}>
-    <DialogContent size={docked ? "sm" : "md"} showCloseButton={false} overlayClassName={docked ? "hidden" : undefined}
+    <DialogContent size={docked ? "sm" : "md"} showCloseButton={docked} overlayClassName={docked ? "hidden" : undefined}
       className={docked ? "top-auto left-auto right-4 bottom-4 w-[min(24rem,calc(100%-2rem))] translate-x-0 translate-y-0 gap-3 rounded-lg p-4 shadow-none ring-0" : "w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto gap-5 p-5 shadow-none ring-0 sm:p-6"}>
       <DialogHeader className={docked ? undefined : "gap-3"}>
         <div className="flex items-center gap-3">

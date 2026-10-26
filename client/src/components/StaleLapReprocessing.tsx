@@ -1,4 +1,5 @@
-import { CheckCircle2, RefreshCw, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, RefreshCw, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { canStartReprocess, submitStaleSessionReprocess } from "@/lib/reprocess-state";
@@ -18,6 +19,7 @@ function ReprocessStatusIcon({ status }: { status: "submitting" | "progressing" 
 }
 
 export function StaleLapReprocessing() {
+  const [closed, setClosed] = useState(false);
   const staleLapDetection = useTelemetryStore((state) => state.staleLapDetection);
   const reprocessState = useTelemetryStore((state) => state.reprocessState);
   const dismissReprocess = telemetryStore.actions.dismissReprocess;
@@ -57,8 +59,9 @@ export function StaleLapReprocessing() {
 
   return (
     <>
-      {showNotification && staleLapDetection && (
-        <div role="status" className="fixed right-4 bottom-4 z-50 w-72 rounded-lg border border-status-info/30 bg-app-surface p-4 shadow-xl">
+      {showNotification && staleLapDetection && !closed && (
+        <div role="status" className="fixed right-4 bottom-4 z-50 w-72 rounded-lg border border-status-info/30 bg-app-surface p-4 pr-9 shadow-xl">
+          <Button type="button" variant="app-ghost" size="icon-xs" aria-label={m.common_close()} onClick={() => setClosed(true)} className="absolute right-2 top-2"><X className="size-3.5" /></Button>
           <div className="mb-2 flex items-center gap-2">
             <RefreshCw aria-hidden="true" className="size-4 shrink-0 text-status-info" />
             <span className="text-sm font-semibold text-app-text">{m.root_lap_detection_updated()}</span>

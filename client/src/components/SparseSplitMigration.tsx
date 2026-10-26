@@ -13,13 +13,14 @@ export function SparseSplitMigration({ layoutPrecedence, onVisibilityChange }: {
   const starts = useIsMutating({ mutationKey: queryKeys.splitMigrationStart, exact: true });
   const [observedRunning, setObservedRunning] = useState(false);
   const [successDismissed, setSuccessDismissed] = useState(false);
+  const [dockClosed, setDockClosed] = useState(false);
   const progress = status.data?.progress;
   const running = progress?.status === "running" || starts > 0;
   const completed = progress?.status === "success" && observedRunning;
   const retryable = progress?.status === "partial" || progress?.status === "error" || start.isError;
   const needsConsent = (status.data?.sessionCount ?? 0) > 0 && progress?.status === "idle";
   const statusError = status.isError;
-  const dialogOpen = !layoutPrecedence && (running || completed && !successDismissed || !running && !completed && (needsConsent || retryable || statusError));
+  const dialogOpen = !layoutPrecedence && (running && !dockClosed || completed && !successDismissed || !running && !completed && (needsConsent || retryable || statusError));
   const percent = progress && progress.total > 0 ? Math.min(100, Math.round(progress.done / progress.total * 100)) : 0;
 
   useEffect(() => { onVisibilityChange(dialogOpen); }, [dialogOpen, onVisibilityChange]);
@@ -28,8 +29,12 @@ export function SparseSplitMigration({ layoutPrecedence, onVisibilityChange }: {
     if (running) { setObservedRunning(true); setSuccessDismissed(false); }
   }, [running]);
 
-  return <Dialog open={dialogOpen} modal={!running && !completed}>
-    <DialogContent size={running || completed ? "sm" : "md"} showCloseButton={false} overlayClassName={running || completed ? "hidden" : undefined}
+  // The docked progress card can be closed; splitting continues in the background.
+  return <Dialog open={dialogOpen} modal={!running && !completed} onOpenChange={(open) => {
+    if (!open && running) setDockClosed(true);
+    else if (!open && completed) setSuccessDismissed(true);
+  }}>
+    <DialogContent size={running || completed ? "sm" : "md"} showCloseButton={running || completed} overlayClassName={running || completed ? "hidden" : undefined}
       className={running || completed
         ? "top-auto left-auto right-4 bottom-4 w-[min(24rem,calc(100%-2rem))] translate-x-0 translate-y-0 gap-3 rounded-lg p-4 shadow-none ring-0"
         : "w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto gap-5 p-5 shadow-none ring-0 sm:p-6"}>

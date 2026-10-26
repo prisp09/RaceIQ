@@ -168,14 +168,13 @@ function AppShell() {
               <Menu className="size-6" />
             </Button>
           </header>
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
+          <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
             <ResponsiveWorkspace>
               <Outlet key={uiLocale} />
             </ResponsiveWorkspace>
+            {displaySettings.engineerEnabled && <EngineerRadio />}
           </main>
         </div>
-
-        {displaySettings.engineerEnabled && <EngineerRadio />}
 
         {mobileNavOpen && (
           <div className="fixed inset-0 z-50 flex justify-end @3xl/shell:hidden">

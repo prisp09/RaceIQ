@@ -3009,5 +3009,8 @@
   "engineer_open_mic_hint": "Open mic is on. Your engineer listens when it isn't talking.",
   "engineer_error_generic": "The engineer couldn't answer. Check your AI provider in Settings.",
   "engineer_expand": "Expand engineer radio",
-  "engineer_collapse": "Collapse engineer radio"
+  "engineer_collapse": "Collapse engineer radio",
+  "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
+  "engineer_mic_permission_allow": "Allow mic",
+  "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload."
 }

@@ -30,6 +30,30 @@ export function EngineerRadio() {
   const [live, setLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [micPermission, setMicPermission] = useState<"granted" | "prompt" | "denied" | "unknown">("unknown");
+
+  useEffect(() => {
+    let status: PermissionStatus | null = null;
+    const update = () => { if (status) setMicPermission(status.state as "granted" | "prompt" | "denied"); };
+    navigator.permissions?.query({ name: "microphone" as PermissionName }).then((result) => { status = result; update(); result.addEventListener("change", update); }).catch(() => {});
+    return () => status?.removeEventListener("change", update);
+  }, []);
+
+  /** Asks the browser for the microphone; speech recognition needs it. */
+  const requestMic = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) return false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      for (const track of stream.getTracks()) track.stop();
+      setMicPermission("granted");
+      setError(null);
+      return true;
+    } catch {
+      setMicPermission("denied");
+      setError(m.engineer_mic_permission_denied());
+      return false;
+    }
+  }, []);
   const speakerRef = useRef<EngineerSpeaker | null>(null);
   const sttRef = useRef<SpeechToText | null>(null);
   const startedRef = useRef(false);
@@ -124,6 +148,7 @@ export function EngineerRadio() {
   useEffect(() => () => { speakerRef.current?.stop(); sttRef.current?.dispose(); }, []);
 
   const start = () => {
+    if (micModeRef.current !== "off" && micPermission !== "granted") void requestMic();
     speakerRef.current?.unlock();
     startedRef.current = true;
     setStarted(true);
@@ -143,7 +168,7 @@ export function EngineerRadio() {
   const binding = displaySettings.engineerPushToTalk?.name;
 
   return (
-    <div className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] z-40 flex w-[min(22rem,calc(100vw-2rem))] flex-col items-end">
+    <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] z-40 flex w-[min(22rem,calc(100%-2rem))] flex-col items-start">
       <div className="pointer-events-auto w-full rounded border border-app-border-input bg-app-surface-alt text-app-text shadow-lg">
         <div className="flex items-center gap-2 border-b border-app-border-input px-3 py-2">
           <Radio className={`size-4 ${live ? "text-status-success" : "text-app-text-muted"}`} aria-hidden="true" />
@@ -167,6 +192,12 @@ export function EngineerRadio() {
         </div>
         {!collapsed && (
           <div className="flex flex-col gap-2 p-3">
+            {micMode !== "off" && micPermission !== "granted" && micPermission !== "unknown" && (
+              <div role="alert" className="flex items-center justify-between gap-2 rounded border border-status-warning/40 px-2 py-1.5 text-xs text-app-text">
+                <span>{micPermission === "denied" ? m.engineer_mic_permission_denied() : m.engineer_mic_permission_needed()}</span>
+                {micPermission === "prompt" && <Button variant="app-outline" size="app-sm" onClick={() => void requestMic()}>{m.engineer_mic_permission_allow()}</Button>}
+              </div>
+            )}
             {!started && (
               <Button variant="app-primary" size="app-sm" onClick={start} className="w-full">
                 {m.engineer_start_radio()}
