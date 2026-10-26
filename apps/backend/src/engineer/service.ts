@@ -42,7 +42,7 @@ export class EngineerService {
   readonly state: EngineerLiveState;
   readonly instructions = new Set<InstructionKind>();
   readonly transcript: TranscriptEntry[] = [];
-  private settings: AppSettings = loadSettings();
+  private settings: AppSettings = loadSettings({ syncLaunchOnLogin: false });
   private lastSaid = new Map<string, number>();
   private bestLap = 0;
   private sessionKey = "";
@@ -79,7 +79,7 @@ export class EngineerService {
   }
 
   refreshSettings(): void {
-    try { this.settings = loadSettings(); } catch { return; }
+    try { this.settings = loadSettings({ syncLaunchOnLogin: false }); } catch { return; }
     const wantsPtt = this.settings.engineerEnabled && this.settings.engineerMicMode === "push-to-talk";
     this.ptt.apply(wantsPtt ? this.settings.engineerPushToTalk as PushToTalkBinding | null : null);
   }
@@ -159,7 +159,7 @@ export class EngineerService {
 
   setMode(mode: EngineerMode): void {
     try {
-      const current = loadSettings();
+      const current = loadSettings({ syncLaunchOnLogin: false });
       if (current.engineerMode === mode) return;
       saveSettings({ ...current, engineerMode: mode });
       this.settings = { ...current, engineerMode: mode };
