@@ -4,7 +4,7 @@ import { IS_WINDOWS, runPowerShellCommand } from "./shell";
 
 const REG_PATH = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const APPROVED_PATH = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
-const VALUE_NAME = "RaceIQ";
+const VALUE_NAME = "RaceIQ with Co-driver";
 
 // StartupApproved binary values used by Windows (same format as Task Manager)
 const ENABLED_BYTES = "02,00,00,00,00,00,00,00,00,00,00,00";

@@ -4,7 +4,7 @@
   <img src="assets/raceiq-icon.png" alt="RaceIQ" width="200">
 </p>
 
-<h1 align="center">RaceIQ</h1>
+<h1 align="center">RaceIQ with Co-driver</h1>
 
 <p align="center">
   Sim racer's companion app, real-time racing telemetry dashboard, lap analysis and iterative experiments for car setup and driving</strong>.
@@ -38,6 +38,13 @@ RaceIQ is the most advanced sim racing telemetry app available to the public —
 It captures telemetry from your racing games, provides a live dashboard, records every lap to a local database, and gives you lap analysis and comparison (with optional AI coaching) and 3D visualizations — all running locally on your PC. It also includes a car and setup catalogue so you can browse and compare setups across tracks.
 
 Check out the [screenshots](assets/screenshots/) to see it in action.
+
+> [!IMPORTANT]
+> **This is an unofficial, modified version of [RaceIQ](https://github.com/SpeedHQ/RaceIQ) by SpeedHQ.** It is not affiliated with or endorsed by SpeedHQ.
+>
+> Modified by Priyanshu Patel, October 2026. Changes: a live race engineer ("Co-driver") with rule-based radio calls, Claude-powered Q&A, coaching and corner tips, push-to-talk and open mic, a British radio voice, and a pop-out radio window. It also adds a Claude (Anthropic) AI provider. It installs alongside the official RaceIQ, with its own install folder, data folder and updates from this fork's releases.
+>
+> Like the original, it is licensed under the [GNU AGPL-3.0](LICENSE) and comes with no warranty. The full source of this version is in this repository. Bug reports for the Co-driver features go to [this fork's issues](https://github.com/prisp09/RaceIQ-with-Co-driver/issues), not to SpeedHQ.
 
 ## Features
 

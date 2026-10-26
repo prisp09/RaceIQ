@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { client } from "@/lib/rpc";
 import { m } from "@/paraglide/messages";
 
+/** This fork's source, offered to every user as the AGPL-3.0 requires. */
+const SOURCE_URL = "https://github.com/prisp09/RaceIQ-with-Co-driver";
+
 export function AboutSection() {
   const [versionInfo, setVersionInfo] = useState<{
     current: string;
@@ -43,11 +46,23 @@ export function AboutSection() {
           {versionInfo?.updateAvailable && (
             <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-status-warning/10 border border-status-warning/30">
               <span className="text-sm text-status-warning">{m.about_update_available()}</span>
-              <a href="https://github.com/SpeedHQ/RaceIQ/releases/latest" target="_blank" rel="noreferrer" className="text-xs text-status-warning underline underline-offset-2">
+              <a href={`${SOURCE_URL}/releases/latest`} target="_blank" rel="noreferrer" className="text-xs text-status-warning underline underline-offset-2">
                 {m.label_download()} v{versionInfo.latest}
               </a>
             </div>
           )}
+        </div>
+      </div>
+      <div>
+        <h2 className="text-sm font-semibold text-app-text mb-2">{m.about_legal_heading()}</h2>
+        <div className="space-y-1 text-xs text-app-text-secondary">
+          <p>{m.about_legal_fork()}</p>
+          <p>{m.about_legal_copyright()}</p>
+          <p>{m.about_legal_license()}</p>
+          <p className="flex gap-4 pt-1">
+            <a href={`${SOURCE_URL}/blob/release/co-driver/LICENSE`} target="_blank" rel="noreferrer" className="underline underline-offset-2">{m.about_legal_license_link()}</a>
+            <a href={SOURCE_URL} target="_blank" rel="noreferrer" className="underline underline-offset-2">{m.about_legal_source_link()}</a>
+          </p>
         </div>
       </div>
     </section>

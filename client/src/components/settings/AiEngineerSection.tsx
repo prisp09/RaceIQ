@@ -156,6 +156,7 @@ export function AiEngineerSection() {
       <div>
         <h3 className="text-sm font-semibold text-app-text">{m.engineer_settings_title()}</h3>
         <p className="mt-1 max-w-xl text-xs text-app-text-muted">{m.engineer_settings_desc()}</p>
+        <p className="mt-2 max-w-xl text-xs text-app-text-muted">{m.engineer_privacy_notice()}</p>
       </div>
       <label className="flex items-center gap-2 text-sm text-app-text">
         <input id="engineer-enabled" type="checkbox" checked={draft.engineerEnabled} onChange={(event) => update({ engineerEnabled: event.target.checked })} className="accent-app-accent" />

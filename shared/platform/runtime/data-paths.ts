@@ -28,5 +28,5 @@ export function gameAssetsDir(gameId: string): string {
 
 /** Writable extracted/recorded/generated track root. */
 export const USER_TRACKS_DIR = IS_COMPILED
-  ? join(process.env.APPDATA ?? homedir(), "RaceIQ", "userdata")
+  ? join(process.env.APPDATA ?? homedir(), "RaceIQ with Co-driver", "userdata")
   : resolve(process.env.DATA_DIR ?? resolve(sourceDir, "..", "..", "..", "data"), "userdata");

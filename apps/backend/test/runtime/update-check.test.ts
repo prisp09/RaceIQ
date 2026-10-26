@@ -110,7 +110,7 @@ describe("release body selection", () => {
 
     try {
       const result = await fetchReleases("0.14.0");
-      expect(requestedUrl).toBe("https://api.github.com/repos/SpeedHQ/RaceIQ/releases?per_page=50&page=1");
+      expect(requestedUrl).toBe("https://api.github.com/repos/prisp09/RaceIQ-with-Co-driver/releases?per_page=50&page=1");
       expect(result.newReleases).toEqual([
         { version: "0.16.0", notes: "latest body", date: "2026-08-01" },
         { version: "0.15.0", notes: "middle body", date: "2026-07-01" },

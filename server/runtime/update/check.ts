@@ -10,18 +10,19 @@ import { ROOT_DIR } from "../config/paths";
 export { isNewer };
 
 const VERSION = APP_VERSION;
-const GITHUB_REPO = "SpeedHQ/RaceIQ";
+// Updates come from this fork's releases, not the official RaceIQ (which would replace the Co-driver build).
+const GITHUB_REPO = "prisp09/RaceIQ-with-Co-driver";
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 const IN_APP_UPDATE_DISABLED = process.env.RACEIQ_DISABLE_IN_APP_UPDATE === "1";
 
 // Dev/test overrides:
-// LOCAL_INSTALLER=path/to/RaceIQ-Setup.exe — skip download, use local installer
+// LOCAL_INSTALLER=path/to/RaceIQ-with-Co-driver-Setup.exe — skip download, use local installer
 // DEV_FORCE_UPDATE=1 — pretend an update is available (version 99.0.0)
 function findLocalInstaller(): string | undefined {
   if (process.env.LOCAL_INSTALLER) return process.env.LOCAL_INSTALLER;
   if (process.env.NODE_ENV === "production") return undefined;
   try {
-    const match = readdirSync(ROOT_DIR).find((f) => /^RaceIQ-Setup.*\.exe$/.test(f));
+    const match = readdirSync(ROOT_DIR).find((f) => /^RaceIQ-with-Co-driver-Setup.*\.exe$/.test(f));
     if (match) {
       const fullPath = join(ROOT_DIR, match);
       console.log(`[Update] Dev mode: found local installer ${fullPath}`);
@@ -185,7 +186,7 @@ export async function checkForUpdate(): Promise<UpdateState> {
     const latest = data.tag_name.replace(/^v/, "");
     const updateAvailable = isNewer(latest, VERSION);
 
-    const installerAsset = data.assets.find((a) => a.name.match(/RaceIQ-Setup-v.*\.exe$/));
+    const installerAsset = data.assets.find((a) => a.name.match(/RaceIQ-with-Co-driver-Setup-v.*\.exe$/));
     const downloadUrl = installerAsset?.browser_download_url ?? null;
 
     let releaseData = {
@@ -262,7 +263,7 @@ export async function applyUpdate(): Promise<void> {
     // Download from GitHub
     if (!state.downloadUrl) throw new Error("No download URL available");
     const downloadUrl = state.downloadUrl;
-    installerPath = join(tmpdir(), `RaceIQ-Setup-v${version}.exe`);
+    installerPath = join(tmpdir(), `RaceIQ-with-Co-driver-Setup-v${version}.exe`);
 
     console.log(`[Update] Downloading installer v${version} from ${downloadUrl}`);
     wsManager.broadcastNotification({ type: "update-progress", stage: "downloading", percent: 0 });

@@ -16,7 +16,7 @@ function crashLog(err: unknown): void {
   } catch {}
   // Try %APPDATA%/RaceIQ first, fall back to exe directory, then cwd
   const candidates = [
-    join(process.env.APPDATA ?? homedir(), "RaceIQ"),
+    join(process.env.APPDATA ?? homedir(), "RaceIQ with Co-driver"),
     dirname(process.execPath),
     process.cwd(),
   ];

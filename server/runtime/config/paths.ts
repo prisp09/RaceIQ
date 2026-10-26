@@ -38,12 +38,15 @@ export const PUBLIC_DIR = IS_COMPILED
 
 /**
  * Writable user data directory.
- * Compiled: %APPDATA%/RaceIQ (Windows) or ./data
+ * Compiled: %APPDATA%/RaceIQ with Co-driver (Windows) or ./data
  * Dev: ./data
  * Used for: database, settings, logs, extracted tracks, recorded outlines, curbs.
  */
+/** Data folder name; differs from the official RaceIQ so this fork installs alongside it. */
+export const APP_DATA_FOLDER = "RaceIQ with Co-driver";
+
 export const USER_DATA_DIR = IS_COMPILED
-  ? join(process.env.APPDATA ?? homedir(), "RaceIQ")
+  ? join(process.env.APPDATA ?? homedir(), APP_DATA_FOLDER)
   : resolve(ROOT_DIR, "data");
 
 /** User-generated track data (extracted, recorded, curbs). */

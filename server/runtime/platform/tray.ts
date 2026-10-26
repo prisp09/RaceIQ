@@ -37,20 +37,20 @@ $raceiqIcon = [System.Drawing.Icon]::ExtractAssociatedIcon($exePath)
 
 $tray = New-Object System.Windows.Forms.NotifyIcon
 $tray.Icon = $raceiqIcon
-$tray.Text = "RaceIQ"
+$tray.Text = "RaceIQ with Co-driver"
 $tray.Visible = $true
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
 
 $openItem = New-Object System.Windows.Forms.ToolStripMenuItem
-$openItem.Text = "Open RaceIQ"
+$openItem.Text = "Open RaceIQ with Co-driver"
 $openItem.add_Click({ Open-RaceIQ })
 $menu.Items.Add($openItem) | Out-Null
 
 $consoleItem = New-Object System.Windows.Forms.ToolStripMenuItem
 $consoleItem.Text = "Show Console"
 $consoleItem.add_Click({
-  $logPath = [System.IO.Path]::Combine($env:APPDATA, 'RaceIQ', 'raceiq.log')
+  $logPath = [System.IO.Path]::Combine($env:APPDATA, 'RaceIQ with Co-driver', 'raceiq.log')
   if (Test-Path $logPath) {
     Start-Process powershell -ArgumentList @('-NoProfile', '-Command', "Get-Content '$logPath' -Wait -Tail 50")
   }
@@ -96,8 +96,8 @@ $timer.add_Tick({
         $ver = $matches[1]
         $updateItem.Text = "Install Update (v$ver)"
         $updateItem.Visible = $true
-        $tray.BalloonTipTitle = "RaceIQ Update Available"
-        $tray.BalloonTipText = "RaceIQ v$ver is available. Click to install."
+        $tray.BalloonTipTitle = "RaceIQ with Co-driver Update Available"
+        $tray.BalloonTipText = "RaceIQ with Co-driver v$ver is available. Click to install."
         $tray.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
         $tray.ShowBalloonTip(5000)
         $script:updateVersion = $ver

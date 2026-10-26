@@ -5,13 +5,14 @@
   #define MyAppVersion "0.0.0"
 #endif
 
-#define MyAppName "RaceIQ"
-#define MyAppPublisher "SpeedHQ"
-#define MyAppURL "https://github.com/SpeedHQ/RaceIQ"
+#define MyAppName "RaceIQ with Co-driver"
+#define MyAppPublisher "Priyanshu Patel (unofficial fork of RaceIQ by SpeedHQ)"
+#define MyAppURL "https://github.com/prisp09/RaceIQ-with-Co-driver"
 #define MyAppExeName "raceiq.exe"
 
 [Setup]
-AppId={{d023ef37-98d7-40de-94b3-58cea61b4d95}
+; Own AppId so this fork installs alongside the official RaceIQ instead of replacing it.
+AppId={{4d3a53e2-4d5d-436e-856b-d6116b3ca52c}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -23,7 +24,8 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir=..
-OutputBaseFilename=RaceIQ-Setup-v{#MyAppVersion}
+OutputBaseFilename=RaceIQ-with-Co-driver-Setup-v{#MyAppVersion}
+LicenseFile=..\LICENSE
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -40,38 +42,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Code]
-const
-  OldAppId = '{d023ef37-98d7-40de-94b3-58cea61b4d95}_is1';
-
-function GetOldUninstallString(): String;
-var
-  UninstallKey: String;
-begin
-  Result := '';
-  // Check both 64-bit and 32-bit registry for the old admin install
-  UninstallKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + OldAppId;
-  if not RegQueryStringValue(HKLM, UninstallKey, 'UninstallString', Result) then
-    RegQueryStringValue(HKLM32, UninstallKey, 'UninstallString', Result);
-end;
-
-procedure RemoveOldAdminInstall();
-var
-  UninstallString: String;
-  ResultCode: Integer;
-begin
-  UninstallString := GetOldUninstallString();
-  if UninstallString <> '' then
-  begin
-    Log('Found old admin install, running uninstaller: ' + UninstallString);
-    // Run the old uninstaller silently
-    Exec('powershell.exe',
-      '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Start-Process -FilePath ''' +
-      RemoveQuotes(UninstallString) + ''' -ArgumentList ''/VERYSILENT'',''/NORESTART'' -Verb RunAs -Wait"',
-      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Log('Old uninstaller finished with code: ' + IntToStr(ResultCode));
-  end;
-end;
-
 procedure UpdatePrepareStatus(const Msg: String);
 begin
   if not WizardSilent then
@@ -86,12 +56,6 @@ begin
   UpdatePrepareStatus('Closing RaceIQ...');
   Exec('taskkill', '/F /IM raceiq.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('powershell.exe', '-NoProfile -Command "Get-NetTCPConnection -LocalPort 3117 -State Listen -EA 0 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -EA 0 }"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-
-  if GetOldUninstallString() <> '' then
-  begin
-    UpdatePrepareStatus('Removing old install...');
-    RemoveOldAdminInstall();
-  end;
 
   Result := '';
 end;
@@ -112,8 +76,8 @@ Type: filesandordirs; Name: "{app}\public\*"
 
 [Registry]
 ; Create startup entry on install (enabled by default)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RaceIQ"; ValueData: """{app}\raceiq.exe"""; Flags: uninsdeletevalue
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueType: binary; ValueName: "RaceIQ"; ValueData: 03 00 00 00 00 00 00 00 00 00 00 00; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RaceIQ with Co-driver"; ValueData: """{app}\raceiq.exe"""; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueType: binary; ValueName: "RaceIQ with Co-driver"; ValueData: 03 00 00 00 00 00 00 00 00 00 00 00; Flags: uninsdeletevalue
 
 [Icons]
 Name: "{userprograms}\{#MyAppName}"; Filename: "wscript.exe"; Parameters: """{app}\raceiq-launcher.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"
@@ -127,5 +91,4 @@ Filename: "wscript.exe"; Parameters: """{app}\raceiq-launcher.vbs"""; WorkingDir
 [UninstallRun]
 Filename: "taskkill"; Parameters: "/F /IM raceiq.exe"; Flags: runhidden; RunOnceId: "KillRaceIQ"
 Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Get-NetTCPConnection -LocalPort 3117 -State Listen -EA 0 | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -EA 0 }}"""; Flags: runhidden; RunOnceId: "KillPort3117"
-Filename: "cmdkey"; Parameters: "/delete:RaceIQ:gemini-api-key"; Flags: runhidden; RunOnceId: "DeleteApiKey"
-Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'RaceIQ' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run' -Name 'RaceIQ' -ErrorAction SilentlyContinue"""; Flags: runhidden; RunOnceId: "RemoveStartup"
+Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'RaceIQ with Co-driver' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run' -Name 'RaceIQ with Co-driver' -ErrorAction SilentlyContinue"""; Flags: runhidden; RunOnceId: "RemoveStartup"
