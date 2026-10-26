@@ -3014,5 +3014,9 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "AI 토큰 사용"
+  "engineer_mode_uses_ai_tokens": "AI 토큰 사용",
+  "engineer_mode_codriver": "코드라이버",
+  "engineer_mode_codriver_desc": "지난 랩을 바탕으로 코너마다 미리 팁을 줍니다.",
+  "engineer_tip_lead": "팁 타이밍: 제동 {value}초 전",
+  "engineer_tip_lead_help": "현재 속도 기준으로 제동 지점보다 이만큼 먼저 말을 끝냅니다."
 }

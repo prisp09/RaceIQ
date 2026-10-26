@@ -45,7 +45,7 @@ const AppSettingsSchema = z.object({
   driverProfileMaxOutputTokens: z.number().int().min(512).max(32768).default(5000),
   // Live race engineer. Provider/model fall back to the AI Chat settings when empty.
   engineerEnabled: z.boolean().default(false),
-  engineerMode: z.enum(["quiet", "normal", "coach"]).default("normal"),
+  engineerMode: z.enum(["quiet", "normal", "coach", "co-driver"]).default("normal"),
   engineerMicMode: z.enum(["push-to-talk", "open-mic", "off"]).default("push-to-talk"),
   engineerPushToTalk: z.union([
     z.object({ kind: z.literal("keyboard"), vk: z.number().int().min(1).max(254), name: z.string().max(40) }),
@@ -55,6 +55,8 @@ const AppSettingsSchema = z.object({
   engineerVoiceRate: z.number().min(0.7).max(1.3).default(0.95),
   engineerVoicePitch: z.number().min(0.5).max(1.5).default(0.85),
   engineerRadioFilter: z.boolean().default(true),
+  // Co-driver: corner tips finish this many seconds before the braking point.
+  engineerTipLeadSeconds: z.number().min(2).max(10).default(5),
   engineerProvider: AiProviderSchema.default(""),
   engineerModel: z.string().default(""),
   localEndpoint: z.string().default("http://localhost:1234/v1"),

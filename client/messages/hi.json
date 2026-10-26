@@ -3014,5 +3014,9 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "AI टोकन का उपयोग"
+  "engineer_mode_uses_ai_tokens": "AI टोकन का उपयोग",
+  "engineer_mode_codriver": "को-ड्राइवर",
+  "engineer_mode_codriver_desc": "पिछले लैप के आधार पर हर मोड़ से पहले सुझाव।",
+  "engineer_tip_lead": "सुझाव का समय: ब्रेक से {value} सेकंड पहले",
+  "engineer_tip_lead_help": "मौजूदा गति पर ब्रेकिंग पॉइंट से इतना पहले सुझाव ख़त्म हो जाता है।"
 }

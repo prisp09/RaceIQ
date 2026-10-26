@@ -36,7 +36,8 @@ export interface DisplaySettings {
   sessionDownsampleFrequencyHz: RecordingFrequencyHz;
   /** Live race engineer. */
   engineerEnabled?: boolean;
-  engineerMode?: "quiet" | "normal" | "coach";
+  engineerMode?: "quiet" | "normal" | "coach" | "co-driver";
+  engineerTipLeadSeconds?: number;
   engineerMicMode?: "push-to-talk" | "open-mic" | "off";
   engineerPushToTalk?: { kind: "keyboard"; vk: number; name: string } | { kind: "joystick"; deviceId: number; button: number; name: string } | null;
   engineerVoiceURI?: string | null;

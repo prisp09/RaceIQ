@@ -22,6 +22,7 @@ type EngineerDraft = {
   engineerVoiceRate: number;
   engineerVoicePitch: number;
   engineerRadioFilter: boolean;
+  engineerTipLeadSeconds: number;
   engineerProvider: NonNullable<DisplaySettings["engineerProvider"]>;
   engineerModel: string;
 };
@@ -39,6 +40,7 @@ function draftFrom(settings: Partial<DisplaySettings>): EngineerDraft {
     engineerVoiceRate: settings.engineerVoiceRate ?? 0.95,
     engineerVoicePitch: settings.engineerVoicePitch ?? 0.85,
     engineerRadioFilter: settings.engineerRadioFilter ?? true,
+    engineerTipLeadSeconds: settings.engineerTipLeadSeconds ?? 5,
     engineerProvider: settings.engineerProvider ?? "",
     engineerModel: settings.engineerModel ?? "",
   };
@@ -150,6 +152,13 @@ export function AiEngineerSection() {
             <div>
               <Label htmlFor="engineer-mode" className="mb-1 block text-xs text-app-text-muted">{m.engineer_mode_label()}</Label>
               <EngineerModePicker id="engineer-mode" value={draft.engineerMode} onChange={(mode) => update({ engineerMode: mode })} />
+              {draft.engineerMode === "co-driver" && (
+                <div className="mt-3">
+                  <Label htmlFor="engineer-tip-lead" className="mb-1 block text-xs text-app-text-muted">{m.engineer_tip_lead({ value: draft.engineerTipLeadSeconds.toFixed(1) })}</Label>
+                  <input id="engineer-tip-lead" type="range" min={2} max={10} step={0.5} value={draft.engineerTipLeadSeconds} onChange={(event) => updateSlider({ engineerTipLeadSeconds: Number(event.target.value) })} className="w-full accent-app-accent" />
+                  <p className="mt-1 text-xs text-app-text-muted">{m.engineer_tip_lead_help()}</p>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="engineer-mic" className="mb-1 block text-xs text-app-text-muted">{m.engineer_mic_label()}</Label>

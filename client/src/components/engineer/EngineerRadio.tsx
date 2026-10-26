@@ -11,7 +11,7 @@ import { WebSpeechToText, type SpeechToText } from "./speech-to-text";
 
 type Line = { id: string; from: "driver" | "engineer"; text: string };
 type EngineerEvent = { type: string } & Record<string, unknown>;
-type Mode = "quiet" | "normal" | "coach";
+type Mode = "quiet" | "normal" | "coach" | "co-driver";
 
 const MAX_LINES = 8;
 

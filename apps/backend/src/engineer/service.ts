@@ -21,6 +21,8 @@ import {
   type InstructionKind,
 } from "./rules";
 import { PushToTalkWatcher, type PushToTalkBinding } from "./input-helper";
+import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
+import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 
 export type TranscriptEntry = { id: string; from: "driver" | "engineer"; text: string; at: string };
 export type EngineerSayKind = "callout" | "answer" | "ack";
@@ -39,7 +41,7 @@ Rules:
 - Write lap times as 1:42.3 and deltas as "plus 0.4" or "minus 0.2". Round numbers for speech.
 - Address the driver as "you" or "mate". Use real radio phrasing where it fits: "Copy.", "Understood.", "Push now.", "Box, box." (only when they should pit).
 - If the driver asks you to start or stop calling something out repeatedly, add a last line exactly "INSTRUCTION: on <kind>" or "INSTRUCTION: off <kind>". Kinds: brake-lockup (lock-ups), understeer, oversteer, bottoming, sector-delta (sector splits), lap-delta (lap times).
-- If the driver asks you to talk more or less, add a last line exactly "MODE: quiet", "MODE: normal" or "MODE: coach".`;
+- If the driver asks you to talk more or less, add a last line exactly "MODE: quiet", "MODE: normal", "MODE: coach" or "MODE: co-driver".`;
 
 const COACH_PROMPT = `You are the driver's race engineer on team radio, British and calm, like a Formula 1 race engineer. After each lap you give a short debrief for the next lap.
 Rules:
@@ -48,6 +50,19 @@ Rules:
 - Then one or two incremental improvements: name the corner and what to change (braking point, entry speed, throttle timing, line, kerbs). Coach, don't list stats.
 - Radio style: "mate", "copy", "push now" where they fit. Example: "1:42.3, two tenths off. Brake a touch earlier into Turn 2, you're running wide on exit."
 - Use only the lap data given. If there are no mistakes, tell them to keep the rhythm and push in their weakest sector.`;
+
+const CO_DRIVER_PROMPT = `You are a co-driver on team radio, British and calm. From the driver's last lap you write short tips that will be read out just before each corner group on the next lap.
+Rules:
+- Reply with ONLY a JSON array: [{"group":"G1","tip":"..."}]. No other text.
+- Each tip is 6 to 12 words, radio style, one concrete change: braking point, entry speed, line, kerbs or throttle. Example: "Brake ten metres later, use the kerb on exit."
+- Do not repeat the corner name; it is added for you.
+- Only include groups with real time to gain (slower than the best lap through that group, or a mistake there). Skip the rest. At most 5 tips.
+- Use only the data given. If no group has time to gain, reply [].`;
+
+/** Tip generation runs in the background while the next lap starts. */
+const CO_DRIVER_TIMEOUT_MS = 15_000;
+/** Lap-saved arrives just before the first packet of the new lap; let the recorder close the lap first. */
+const CO_DRIVER_SETTLE_MS = 300;
 
 /** Coach debriefs are skipped if Claude takes longer than this. */
 export const COACH_TIMEOUT_MS = 4000;
@@ -75,6 +90,14 @@ export class EngineerService {
   private readonly ptt: PushToTalkWatcher;
 
   private readonly generate: EngineerGenerate;
+  readonly tips = new TipScheduler();
+  private coGroups: CornerGroup[] = [];
+  private coGroupsKey = "";
+  private coRecorder: CornerLapRecorder | null = null;
+  private coLapNumber = -1;
+  private coLastTick = 0;
+  lastLapCornerStats: CornerGroupStats[] = [];
+  bestLapCornerStats: CornerGroupStats[] = [];
 
   constructor(generate: EngineerGenerate = defaultGenerate) {
     this.generate = generate;
@@ -88,7 +111,11 @@ export class EngineerService {
   start(): void {
     if (this.untap) return;
     this.untap = addLiveTelemetryTap({
-      onTelemetry: (packet, sectors, pit) => { if (this.settings.engineerEnabled) this.state.update(packet, sectors, pit); },
+      onTelemetry: (packet, sectors, pit) => {
+        if (!this.settings.engineerEnabled) return;
+        this.state.update(packet, sectors, pit);
+        if (this.mode === "co-driver") this.coDriverTick(packet);
+      },
       onNotification: (event) => { if (this.settings.engineerEnabled && event.type === "lap-saved") this.onLapSaved(event); },
     });
     this.refreshSettings();
@@ -105,6 +132,7 @@ export class EngineerService {
 
   refreshSettings(): void {
     try { this.settings = loadSettings({ syncLaunchOnLogin: false }); } catch { return; }
+    this.tips.setLeadSeconds(this.settings.engineerTipLeadSeconds);
     const wantsPtt = this.settings.engineerEnabled && this.settings.engineerMicMode === "push-to-talk";
     this.ptt.apply(wantsPtt ? this.settings.engineerPushToTalk as PushToTalkBinding | null : null);
   }
@@ -130,6 +158,7 @@ export class EngineerService {
     const last = this.lastSaid.get(callout.key) ?? 0;
     if (kind === "callout" && cooldown > 0 && now - last < cooldown) return;
     this.lastSaid.set(callout.key, now);
+    this.tips.markBusy(now + speechSeconds(callout.text) * 1000);
     const entry = this.record("engineer", callout.text);
     wsManager.broadcastNotification({ type: "engineer-say", id: entry.id, kind, priority: callout.priority, text: callout.text, createdAt: entry.at });
   }
@@ -165,7 +194,7 @@ export class EngineerService {
     const kept: string[] = [];
     for (const line of raw.split("\n")) {
       const instruction = /^\s*INSTRUCTION:\s*(on|off)\s+([a-z-]+)/i.exec(line);
-      const mode = /^\s*MODE:\s*(quiet|normal|coach)/i.exec(line);
+      const mode = /^\s*MODE:\s*(quiet|normal|coach|co-driver)/i.exec(line);
       if (instruction) {
         const kind = instruction[2].toLowerCase() as InstructionKind;
         if ((INSTRUCTION_KINDS as readonly string[]).includes(kind)) {
@@ -216,17 +245,80 @@ export class EngineerService {
     });
     if (calls.some((call) => call.key === "status")) this.lapsSinceStatus = 0;
     if (isValid && (this.bestLap <= 0 || lapTime < this.bestLap)) this.bestLap = lapTime;
-    if (mode !== "coach") {
+    if (mode !== "coach" && mode !== "co-driver") {
       for (const call of calls) this.say(call);
       return;
     }
-    // Coach: critical calls stay instant; the Claude debrief replaces every other after-lap call.
+    // Coach and Co-driver: critical calls stay instant; AI replaces every other after-lap call.
     for (const call of calls) if (call.priority === 2) this.say(call);
-    void this.coachLap({ lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest });
+    const lap = { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest };
+    // Co-driver without a corner map (or before one loads) behaves like Coach.
+    const coDriver = mode === "co-driver" && this.coGroups.length > 0;
+    void this.coachLap(lap, coDriver);
+    if (coDriver) setTimeout(() => void this.refreshCornerTips(lap), CO_DRIVER_SETTLE_MS);
+  }
+
+  /** Co-driver: records each corner group and plays cached tips ahead of braking zones. */
+  coDriverTick(packet: TelemetryPacket, nowMs = Date.now()): void {
+    const trackLength = this.state.trackLength;
+    const segments = this.state.cornerSegments;
+    const key = `${packet.gameId}|${packet.trackId}|${segments.length}|${Math.round(trackLength)}`;
+    if (key !== this.coGroupsKey) {
+      this.coGroupsKey = key;
+      this.coGroups = trackLength > 0 ? groupCorners(segments, trackLength) : [];
+      this.coRecorder = null;
+      this.tips.setTips([]);
+      this.lastLapCornerStats = [];
+      this.bestLapCornerStats = [];
+    }
+    if (this.coGroups.length === 0) return;
+    if (packet.LapNumber !== this.coLapNumber || !this.coRecorder) {
+      if (this.coRecorder && packet.LapNumber !== this.coLapNumber) this.lastLapCornerStats = this.coRecorder.finish();
+      this.coRecorder = new CornerLapRecorder(this.coGroups, trackLength);
+      this.coLapNumber = packet.LapNumber;
+      this.tips.newLap();
+    }
+    const frac = this.state.lapFraction;
+    if (frac === null) return;
+    this.coRecorder.update(packet, frac);
+    if (nowMs - this.coLastTick < 100) return;
+    this.coLastTick = nowMs;
+    const tip = this.tips.update(frac, packet.Speed, trackLength, nowMs);
+    if (tip) this.say({ key: `tip-${tip.groupId}`, priority: 0, text: tip.text });
+  }
+
+  /** One AI call per lap: a short tip per corner group with time to gain. Keeps the last good tips on failure. */
+  async refreshCornerTips(lap: { lapTime: number; isValid: boolean; previousBest: number }): Promise<void> {
+    const last = this.lastLapCornerStats;
+    if (last.length === 0) return;
+    const best = new Map(this.bestLapCornerStats.map((entry) => [entry.id, entry]));
+    const labels = new Map(this.coGroups.map((group) => [group.id, group.label]));
+    const groups = last.map(({ brakeFrac: _b, ...entry }) => {
+      const ref = best.get(entry.id);
+      return {
+        ...entry,
+        label: labels.get(entry.id),
+        best: ref ? { entryKph: ref.entryKph, minKph: ref.minKph, exitKph: ref.exitKph, brakeMetresBeforeEntry: ref.brakeMetresBeforeEntry, timeS: ref.timeS } : null,
+        timeLostS: ref ? Number((entry.timeS - ref.timeS).toFixed(2)) : null,
+      };
+    });
+    const isBest = lap.isValid && (lap.previousBest <= 0 || lap.lapTime < lap.previousBest);
+    let raw = "";
+    try {
+      raw = await Promise.race([
+        this.generate(CO_DRIVER_PROMPT, `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`),
+        new Promise<string>((resolve) => setTimeout(() => resolve(""), CO_DRIVER_TIMEOUT_MS)),
+      ]);
+    } catch {
+      raw = "";
+    }
+    const tips = parseTips(raw, this.coGroups, last);
+    if (tips.length > 0 || raw.trim().startsWith("[")) this.tips.setTips(tips);
+    if (isBest || this.bestLapCornerStats.length === 0) this.bestLapCornerStats = last;
   }
 
   /** Coach mode: a Claude-written lap debrief. Says nothing if Claude fails or is too slow. */
-  async coachLap(lap: { lapNumber: number; lapTime: number; isValid: boolean; previousBest: number }): Promise<void> {
+  async coachLap(lap: { lapNumber: number; lapTime: number; isValid: boolean; previousBest: number }, brief = false): Promise<void> {
     const issues = this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues;
     const sectors = this.state.sectors;
     const context = {
@@ -244,7 +336,7 @@ export class EngineerService {
     let text = "";
     try {
       text = await Promise.race([
-        this.generate(COACH_PROMPT, `Lap data (JSON): ${JSON.stringify(context)}`),
+        this.generate(brief ? `${COACH_PROMPT}\n- Co-driver tips cover individual corners, so keep this to ONE sentence under 15 words.` : COACH_PROMPT, `Lap data (JSON): ${JSON.stringify(context)}`),
         new Promise<string>((resolve) => setTimeout(() => resolve(""), COACH_TIMEOUT_MS)),
       ]);
     } catch {

@@ -13,13 +13,15 @@ A radio-style race engineer that talks to the driver during a live session. It s
 | AI model | New `liveEngineer` AI feature through the existing provider stack. Claude (Anthropic) with Claude Haiku 5.5 recommended. | Decided |
 | Mic input | Push to talk and open mic are both required. Off is also available. | Decided |
 | Push-to-talk binding | Any keyboard key or wheel/button-box button, chosen on a "press the button you want" screen and working while the game has focus (GetAsyncKeyState + winmm joystick polling). | Chosen default (user can change) |
-| Verbosity modes | Quiet / Normal / Coach, default Normal. | Chosen default (user can change) |
+| Verbosity modes | Quiet / Normal / Coach / Co-driver, default Normal. | Chosen default (user can change) |
 | Upstream | Personal feature on the prisp09 fork only. No upstream issue or PR. | Decided |
 
 ## Verbosity modes (proposed)
 - **Quiet:** answers questions and follows standing instructions. Proactive calls are critical only: fuel for fewer than 2 laps, rapid tyre pressure loss, pit window open.
 - **Normal:** Quiet plus a lap summary after each lap (lap time, delta to best, personal best or sector best), and fuel/tyre status every few laps.
 - **Coach:** Normal plus the top one or two mistakes of the lap, named by corner ("Lock-up into Turn 1, front left. Brake a touch earlier."), and repeat-mistake reminders.
+
+- **Co-driver:** critical calls, a one-sentence AI debrief, and turn-by-turn tips. Corners closer than 150 m are grouped ("Turns 1 and 2"). After each lap, one AI call turns the lap's per-group data (entry, minimum and exit speed, brake point, time through the group, compared with the best lap) into a 6–12 word tip for each group with time to gain. Tips are cached and spoken so they finish a set time before the braking point ("Tip timing", 2–10 s, default 5 s) at the current speed. Speech never overlaps, and a tip that can no longer finish before braking is dropped. Tracks without a corner map, or before the first full lap, fall back to Coach. If the AI fails, the last good tips stay.
 
 Proactive calls are template-based (no AI), with priorities, per-type cooldowns and a global "radio busy" lock, so they are instant and free. AI is used for questions and on-request coaching, and answers in one or two short sentences.
 

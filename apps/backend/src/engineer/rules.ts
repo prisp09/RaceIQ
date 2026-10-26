@@ -7,7 +7,7 @@ import type { TuneIssueKind } from "@raceiq/shared/racing/tuning/issues";
 import type { LivePitData, LiveSectorData } from "@raceiq/shared/racing/live/types";
 import type { IssueEvent, LapIssueTally } from "./state";
 
-export type EngineerMode = "quiet" | "normal" | "coach";
+export type EngineerMode = "quiet" | "normal" | "coach" | "co-driver";
 export type CalloutPriority = 0 | 1 | 2;
 export type Callout = { key: string; priority: CalloutPriority; text: string };
 

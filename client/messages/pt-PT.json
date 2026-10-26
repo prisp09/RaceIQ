@@ -3013,5 +3013,9 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Usa tokens de IA"
+  "engineer_mode_uses_ai_tokens": "Usa tokens de IA",
+  "engineer_mode_codriver": "Copiloto",
+  "engineer_mode_codriver_desc": "Dicas antes de cada curva, com base na tua última volta.",
+  "engineer_tip_lead": "Momento das dicas: {value} s antes da travagem",
+  "engineer_tip_lead_help": "As dicas terminam com esta antecedência do ponto de travagem à tua velocidade atual."
 }

@@ -3013,5 +3013,9 @@
   "engineer_mic_permission_needed": "Allow microphone access so your engineer can hear you.",
   "engineer_mic_permission_allow": "Allow mic",
   "engineer_mic_permission_denied": "Microphone is blocked. Click the lock icon in the address bar, allow the microphone, then reload.",
-  "engineer_mode_uses_ai_tokens": "Використовує токени ШІ"
+  "engineer_mode_uses_ai_tokens": "Використовує токени ШІ",
+  "engineer_mode_codriver": "Штурман",
+  "engineer_mode_codriver_desc": "Поради перед кожним поворотом на основі останнього кола.",
+  "engineer_tip_lead": "Час порад: за {value} с до гальмування",
+  "engineer_tip_lead_help": "Поради закінчуються за цей час до точки гальмування на поточній швидкості."
 }

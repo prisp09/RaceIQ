@@ -96,6 +96,11 @@ export class EngineerLiveState {
     }
   }
 
+  /** Named track segments for the current track (empty until loaded or when the track has no map). */
+  get cornerSegments(): readonly NamedSegment[] {
+    return this.segments;
+  }
+
   get trackLength(): number {
     return this.pit?.trackLength ?? 0;
   }
