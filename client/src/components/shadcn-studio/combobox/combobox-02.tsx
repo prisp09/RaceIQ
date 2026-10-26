@@ -38,6 +38,7 @@ export interface Combobox02Props {
   className?: string;
   fallbackLabel?: string;
   popupHeader?: ReactNode;
+  clearOnOpen?: boolean;
   /** Tooltip for the closed control. */
   title?: string;
 }
@@ -72,9 +73,15 @@ export function Combobox02({
   className = "w-full max-w-xs",
   fallbackLabel,
   popupHeader,
+  clearOnOpen = false,
   title,
 }: Combobox02Props) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen && clearOnOpen) setSearch("");
+    setOpen(nextOpen);
+  }
   const optionsWithFallback = useMemo(() => {
     if (!value || options.some((option) => option.value === value) || !fallbackLabel) return options;
     return [...options, { value, label: fallbackLabel }];
@@ -86,10 +93,12 @@ export function Combobox02({
   return (
     <Combobox
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
       openOnInputClick
       items={groups}
       value={selectedOption}
+      inputValue={clearOnOpen ? (open ? search : selectedOption?.label ?? "") : undefined}
+      onInputValueChange={clearOnOpen ? setSearch : undefined}
       disabled={disabled}
       onValueChange={(option) => {
         if (option && "value" in option && !("items" in option)) {
@@ -102,10 +111,10 @@ export function Combobox02({
         id={id}
         title={title}
         aria-label={ariaLabel ?? placeholder}
-        placeholder={placeholder}
+        placeholder={clearOnOpen && open ? "" : placeholder}
         disabled={disabled}
         showTrigger={false}
-        onClick={() => setOpen(true)}
+        onClick={() => handleOpenChange(true)}
         className={cn("w-full border-app-border-input bg-transparent dark:bg-transparent [&_[data-slot=input-group-control]]:pr-8", focusClass, className)}
       >
         <button
@@ -113,7 +122,7 @@ export function Combobox02({
           aria-label={open ? "Hide options" : "Show options"}
           aria-expanded={open}
           disabled={disabled}
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => handleOpenChange(!open)}
           className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-app-text-muted hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent"
         >
           <ChevronDownIcon aria-hidden="true" className="size-4" />
