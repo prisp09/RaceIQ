@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { NamedSegment } from "@raceiq/shared/racing/tracks/named-segments";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, tipTriggerFrac } from "../../src/engineer/co-driver";
-import { summarizeSession, type SessionLapRecord } from "../../src/engineer/session-summary";
+import { anomalyReason, summarizeSession, type SessionLapRecord } from "../../src/engineer/session-summary";
 
 const corner = (number: number, startFrac: number, endFrac: number): NamedSegment => ({ type: "corner", name: `T${number}`, number, startFrac, endFrac });
 const straight = (startFrac: number, endFrac: number): NamedSegment => ({ type: "straight", name: "Straight", startFrac, endFrac });
@@ -109,5 +109,19 @@ describe("session summary for open questions", () => {
     expect(summary.lapTimesS).toEqual([103, 102, "104 (invalid)", 101.5]);
     expect((summary.sectors as Array<{ sector: number; bestS: number; averageLossS: number }>)[0]).toEqual({ sector: 1, bestS: 33.5, averageLossS: 0.17 });
     expect(summarizeSession([])).toEqual({ laps: 0 });
+  });
+});
+
+describe("anomalous laps", () => {
+  test("flags a lap far slower than usual and leaves it out of the session summary", () => {
+    expect(anomalyReason(300, [120, 121])).toContain("far slower than usual");
+    expect(anomalyReason(125, [120, 121])).toBeNull();
+    expect(anomalyReason(300, [120])).toBeNull(); // needs two normal laps first
+    const laps: SessionLapRecord[] = [
+      { lap: 1, timeS: 120, valid: true, sectorTimesS: [], mistakes: {}, position: null },
+      { lap: 2, timeS: 121, valid: true, sectorTimesS: [], mistakes: {}, position: null },
+      { lap: 3, timeS: 300, valid: true, sectorTimesS: [], mistakes: { "brake-lockup": { "Turn 1": 1 } }, position: null, excluded: "far slower than usual" },
+    ];
+    expect(summarizeSession(laps)).toMatchObject({ validLaps: 2, excludedLaps: 1, averageValidLapS: 120.5, recurringMistakes: [] });
   });
 });

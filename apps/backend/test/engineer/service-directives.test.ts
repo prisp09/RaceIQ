@@ -120,3 +120,25 @@ describe("race engineer new session", () => {
     }
   });
 });
+
+describe("race engineer ignores anomalous laps", () => {
+  test("an idle lap or out lap gets no lap call and doesn't count toward pace", () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "normal" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(undefined, () => 0);
+    try {
+      service.start();
+      emitLiveNotification({ type: "lap-saved", sessionId: 9, lapNumber: 1, lapTime: 150, isValid: true, classification: "out_lap" });
+      emitLiveNotification({ type: "lap-saved", sessionId: 9, lapNumber: 2, lapTime: 120, isValid: true, classification: "pace" });
+      emitLiveNotification({ type: "lap-saved", sessionId: 9, lapNumber: 3, lapTime: 121, isValid: true, classification: "pace" });
+      emitLiveNotification({ type: "lap-saved", sessionId: 9, lapNumber: 4, lapTime: 300, isValid: true, classification: "pace" });
+      expect(said).toEqual(["Purple lap. 2:00.0. Good job.", "2:01.0, plus 1.0. Push now."]);
+      expect(service.sessionLaps.map((lap) => Boolean(lap.excluded))).toEqual([true, false, false, true]);
+    } finally {
+      service.stop();
+      wsManager.broadcastNotification = original;
+    }
+  });
+});

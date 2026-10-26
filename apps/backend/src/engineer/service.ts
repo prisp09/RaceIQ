@@ -26,7 +26,9 @@ import {
   type InstructionKind,
 } from "./rules";
 import { PushToTalkWatcher, type PushToTalkBinding } from "./input-helper";
-import { lapRecordFromTally, summarizeSession, type SessionLapRecord } from "./session-summary";
+import { anomalyReason, lapRecordFromTally, summarizeSession, type SessionLapRecord } from "./session-summary";
+import { isPaceLap } from "@raceiq/shared/racing/lap-classification";
+import type { LapClassification } from "@raceiq/shared/racing/lap-classification";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 
@@ -61,6 +63,7 @@ Answering:
 - Use the live data, session summary, corner splits and driver dossier provided. For general questions about tracks, cars, technique or setup you may use your own racing knowledge; say when something is a general suggestion rather than from their data.
 - Setup advice: give one to three concrete changes in simple terms, e.g. "front anti-roll bar down two clicks, brake bias one click rearward", tied to what the data shows (understeer, oversteer, lock-ups, bottoming). Small steps, one thing at a time.
 - If something you need isn't in the data, say so briefly and still give your best general advice.
+- Laps marked "excluded" (out laps, in laps, idle or stopped laps far slower than usual) are not representative. Never use them for pace, consistency or advice; don't criticise the driver for them.
 - If the driver asks you to start or stop calling something out repeatedly, add a last line exactly "INSTRUCTION: on <kind>" or "INSTRUCTION: off <kind>". Kinds: brake-lockup (lock-ups), understeer, oversteer, bottoming, sector-delta (sector splits), lap-delta (lap times).
 - If the driver asks you to talk more or less, add a last line exactly "MODE: quiet", "MODE: normal", "MODE: coach" or "MODE: co-driver".`;
 
@@ -141,6 +144,8 @@ export class EngineerService {
   private coLastTick = 0;
   lastLapCornerStats: CornerGroupStats[] = [];
   readonly sessionLaps: SessionLapRecord[] = [];
+  /** The last saved lap was an anomaly; its corner data isn't representative. */
+  private lastLapExcluded = false;
   private endedSessionKey = "";
   private readonly rng: Rng;
   private dossier = "";
@@ -332,7 +337,18 @@ export class EngineerService {
     const previousBest = this.bestLap;
     const lapIssues = this.state.lastLapIssues.size > 0 ? this.state.lastLapIssues : this.state.lapIssues;
     const sectorTimes = Array.isArray(event.sectors) ? (event.sectors as number[]) : (this.state.sectors?.lastTimes ?? []);
-    this.sessionLaps.push(lapRecordFromTally(Number(event.lapNumber) || this.sessionLaps.length + 1, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null));
+    // Out laps, in laps and idle laps (far slower than usual) say nothing about pace: keep them out of analysis and calls.
+    const classification = (event.classification ?? null) as LapClassification | null;
+    const normalTimes = this.sessionLaps.filter((lap) => lap.valid && !lap.excluded).map((lap) => lap.timeS);
+    const excluded = !isPaceLap(classification) ? `not a pace lap (${classification})` : anomalyReason(lapTime, normalTimes);
+    this.lastLapExcluded = excluded !== null;
+    this.sessionLaps.push(lapRecordFromTally(Number(event.lapNumber) || this.sessionLaps.length + 1, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null, excluded));
+    if (excluded) {
+      // Critical calls (fuel, tyres) still matter on any lap; everything else waits for a real lap.
+      const critical = lapCompleteCallouts(this.mode, { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest, pit: this.state.pit, lastLapIssues: new Map(), lapsSinceStatus: 0 }, this.rng).filter((call) => call.priority === 2);
+      for (const call of critical) this.say(call);
+      return;
+    }
     this.lapsSinceStatus++;
     const mode = this.mode === "quiet" && this.instructions.has("lap-delta") ? "normal" : this.mode;
     const calls = lapCompleteCallouts(mode, {
@@ -361,6 +377,7 @@ export class EngineerService {
 
   /** Per-corner-group time on the last lap against the best lap, for questions. */
   cornerSplits(): Array<Record<string, unknown>> {
+    if (this.lastLapExcluded) return [];
     const best = new Map(this.bestLapCornerStats.map((entry) => [entry.id, entry]));
     const labels = new Map(this.coGroups.map((group) => [group.id, group.label]));
     return this.lastLapCornerStats.map((entry) => {
