@@ -28,6 +28,9 @@ export type EngineerSayKind = "callout" | "answer" | "ack";
 const COOLDOWN_MS: Record<string, number> = { sector: 0, "lap-summary": 0, status: 0, "coach-lap": 0, "fuel-critical": 60_000, "tyres-critical": 60_000 };
 const ISSUE_COOLDOWN_MS = 4000;
 const TRANSCRIPT_LIMIT = 60;
+// Replies are capped at ~35 words by the prompt; the budget is mostly for the
+// model's hidden reasoning, which Claude counts against max_tokens.
+export const ENGINEER_MAX_OUTPUT_TOKENS = 2000;
 
 const SYSTEM_PROMPT = `You are the driver's race engineer on team radio during a live sim racing session. You are British, calm and concise, like a Formula 1 race engineer.
 Rules:
@@ -123,7 +126,7 @@ export class EngineerService {
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
       ].filter(Boolean).join("\n\n");
-      const result = await ai.generateText({ system: SYSTEM_PROMPT, prompt, temperature: 0.4, maxOutputTokens: 300 });
+      const result = await ai.generateText({ system: SYSTEM_PROMPT, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
       const reply = this.applyDirectives(String(result.analysis ?? ""));
       this.say({ key: "answer", priority: 1, text: reply || "Say again, I didn't get that." }, "answer");
       return { text: reply };

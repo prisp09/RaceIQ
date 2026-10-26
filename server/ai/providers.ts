@@ -403,11 +403,15 @@ export async function runOpenAiCompatible(options: OpenAiRequestOptions): Promis
     }
 
     const data = await res.json() as {
-      choices?: Array<{ message?: { content?: string } }>;
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
       usage?: { prompt_tokens?: number; completion_tokens?: number };
     };
     const text = data.choices?.[0]?.message?.content ?? "";
-    if (!text.trim()) throw new Error("OpenAI returned empty response");
+    if (!text.trim()) {
+      const finish = data.choices?.[0]?.finish_reason;
+      // "length" means the token budget ran out (Claude counts hidden reasoning against it).
+      throw new Error(finish === "length" ? "Model ran out of output tokens before answering" : `Model returned an empty response${finish ? ` (${finish})` : ""}`);
+    }
     const analysis = options.schema ? extractJson(text) : text.trim();
     const usage = data.usage ?? {};
     logLlmEvent("llm-response", { ...diagnostic, response: data });

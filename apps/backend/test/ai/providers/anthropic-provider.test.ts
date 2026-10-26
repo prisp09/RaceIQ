@@ -88,4 +88,15 @@ describe("Claude (Anthropic) provider", () => {
       restore();
     }
   });
+
+  test("explains an empty reply caused by running out of output tokens", async () => {
+    const requests: CapturedRequest[] = [];
+    const restore = installFetchStub(requests, { choices: [{ index: 0, message: { role: "assistant", content: "" }, finish_reason: "length" }], usage: { prompt_tokens: 900, completion_tokens: 300 } });
+    try {
+      const adapter = new AnthropicProviderAdapter({ feature: "chat", model: "claude-haiku-5-5", apiKey: "test-key" });
+      await expect(adapter.generateText({ prompt: "ping", maxOutputTokens: 300 })).rejects.toThrow("Model ran out of output tokens before answering");
+    } finally {
+      restore();
+    }
+  });
 });
