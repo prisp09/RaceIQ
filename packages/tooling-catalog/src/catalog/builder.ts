@@ -639,6 +639,8 @@ export async function buildTelemetryCatalog(): Promise<BuiltTelemetryCatalog> {
     ["timing.track-length", "ams2.trackLengthM", "m"],
     ["race.on-pit-road", "ams2.inPits", "boolean"],
     ["session.session-type", "ams2.sessionType", "text"],
+    ["timing.total-laps", "ams2.lapsInEvent", "count"],
+    ["timing.session-time-remain", "ams2.eventTimeRemainingS", "s"],
   ] as const) {
     const variable = variables.get(semantic);
     if (variable) {

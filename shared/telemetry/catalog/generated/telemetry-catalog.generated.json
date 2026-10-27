@@ -6,13 +6,13 @@
     "generator": {
       "name": "RaceIQ telemetry-catalog generator",
       "version": "0.20.0",
-      "sourceHash": "fd03c450b03f31505862d865bb4574da2f25c6d704cd387c6cbbbfc1bb5c9472"
+      "sourceHash": "664b8e55cff26c2659ed9399e2bf7574df20c83136201d26f7d28823d62efa35"
     },
     "sourceHashes": {
       "packages/capture-formats/src/lmu/opponent-snapshot.ts": "c18e10f39668501f9c4742bec8999bc7faeeba2c8ea7b42d60accfbbe4e8f0c6",
       "packages/game-ac-evo/src/parser.ts": "29cb3985fe32c797554d98f107a0c4d76ddcc5279d97e75423365e1a0887f5de",
-      "packages/game-acc/src/parser.ts": "ebbcaf92f7a7aa4d60eb3d408dfd6278e8ff97530c5d47c93597cffed0f8a47c",
-      "packages/game-ams2/src/normalizer.ts": "71f862da491e8777b755fce88b3892cd0674c63f1e406bcfbf3a99c7284e24fd",
+      "packages/game-acc/src/parser.ts": "fa85c585daf26fd1a129a77547b273b30d31bbce77e903e112d250c00c76ac45",
+      "packages/game-ams2/src/normalizer.ts": "1f3d334877533a4b748aa283cb95b7fb8762f3ea50f0ab2f8a44236eb438e031",
       "packages/game-f1-2025/src/f1-state.ts": "3a8a7354ef04ac1515ecccdfe12d37e8a8e160c762fdac10920646039c661cce",
       "packages/game-fm-2023/src/parser.ts": "71c348b894f84f6086c9582d0cce473bac75a3c85896010a0e5762854718b835",
       "packages/game-iracing-metadata/src/session-info/catalog.ts": "4d39b51587bf71a519991ff91a7781efd01190cd633c8e8ef3f4234fa6affb98",
@@ -22,7 +22,7 @@
       "server/session-capture/frame-time.ts": "55c44a6cede5e2c5fb1e1c45568fe44b4a9a8b156f260f69bb5d89f9c24935a2",
       "shared/racing/setups/schema.ts": "987941bb8f38520920686ef540e67ce2259fdc962de03ccb959f6b5ef773b28f"
     },
-    "contentHash": "bc7cf3258c5b61865a4db41b3cf07d2d37a5678fc8d545e4a59fecb78faec4ef"
+    "contentHash": "b098bc792ae8c0d14db5051ce1be79f8161aec56c0ecad3001ebba3f10190e4f"
   },
   "generatedFrom": [
     "packages/tooling-catalog/src/root.ts",
@@ -60878,7 +60878,7 @@
     {
       "id": "timing.session-time-left-ms",
       "label": "Session Time Left Ms",
-      "description": "Session-state block (GRAPHICS_EVO embedded SESSION_STATE)",
+      "description": "ACC Graphics.sessionTimeLeft in ms; absent for sources without this field.",
       "parentId": "timing",
       "canonicalUnit": "ms",
       "shape": "scalar",
@@ -60894,14 +60894,24 @@
           "description": "This parser does not expose an equivalent source value."
         },
         "acc": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "direct",
+          "nativeUnit": "ms",
+          "sources": [
+            "acc.sessionTimeLeftMs"
+          ],
+          "freshness": "continuous",
+          "description": "acc parser exposes 1 linked field.",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-acc/src/parser.ts"
+          },
+          "limitations": []
         },
         "ac-evo": {
           "kind": "direct",
           "nativeUnit": "ms",
           "sources": [
+            "acc.sessionTimeLeftMs",
             "acc.acEvo.sessionTimeLeftMs"
           ],
           "freshness": "continuous",
@@ -61047,9 +61057,18 @@
           "description": "No equivalent source variable is currently identified for this parser."
         },
         "ams2": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "No equivalent source variable is currently identified for this parser."
+          "kind": "direct",
+          "nativeUnit": "s",
+          "sources": [
+            "ams2.eventTimeRemainingS"
+          ],
+          "freshness": "continuous",
+          "description": "Recorded AMS2 shared-memory value",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-ams2/src/normalizer.ts"
+          },
+          "limitations": []
         }
       },
       "valueType": "number",
@@ -61462,14 +61481,24 @@
           "limitations": []
         },
         "acc": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "direct",
+          "nativeUnit": "count",
+          "sources": [
+            "acc.sessionTotalLaps"
+          ],
+          "freshness": "continuous",
+          "description": "acc parser exposes 1 linked field.",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-acc/src/parser.ts"
+          },
+          "limitations": []
         },
         "ac-evo": {
           "kind": "direct",
           "nativeUnit": "count",
           "sources": [
+            "acc.sessionTotalLaps",
             "acc.acEvo.sessionTotalLaps"
           ],
           "freshness": "continuous",
@@ -61514,9 +61543,18 @@
           "description": "This parser does not expose an equivalent source value."
         },
         "ams2": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "direct",
+          "nativeUnit": "count",
+          "sources": [
+            "ams2.lapsInEvent"
+          ],
+          "freshness": "continuous",
+          "description": "Recorded AMS2 shared-memory value",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-ams2/src/normalizer.ts"
+          },
+          "limitations": []
         }
       },
       "valueType": "number",
@@ -77612,6 +77650,30 @@
         "retention": "exact"
       },
       {
+        "path": "acc.sessionTimeLeftMs",
+        "label": "Session Time Left Ms",
+        "unit": "ms",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC Graphics.sessionTimeLeft in ms; absent for sources without this field.",
+        "semanticId": "timing.session-time-left-ms",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "acc.sessionTotalLaps",
+        "label": "Session Total Laps",
+        "unit": "count",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC Graphics.numberOfLaps: laps in a lap-limited session, 0 when time-limited.",
+        "semanticId": "timing.total-laps",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
         "path": "acc.sessionType",
         "label": "Session Type",
         "unit": "text",
@@ -80705,6 +80767,30 @@
         "count": 1,
         "description": "Road Temp C source value reported by ac-evo in °C.",
         "semanticId": "weather.track-temp",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "acc.sessionTimeLeftMs",
+        "label": "Session Time Left Ms",
+        "unit": "ms",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC Graphics.sessionTimeLeft in ms; absent for sources without this field.",
+        "semanticId": "timing.session-time-left-ms",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "acc.sessionTotalLaps",
+        "label": "Session Total Laps",
+        "unit": "count",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC Graphics.numberOfLaps: laps in a lap-limited session, 0 when time-limited.",
+        "semanticId": "timing.total-laps",
         "sourceKind": "extension",
         "recordedByRaceIQ": true,
         "retention": "exact"
@@ -96553,11 +96639,33 @@
         "retention": "exact"
       },
       {
+        "path": "ams2.eventTimeRemainingS",
+        "label": "ams2.eventTimeRemainingS",
+        "semanticId": "timing.session-time-remain",
+        "unit": "s",
+        "dataType": "number",
+        "description": "AMS2 recorded shared-memory extension",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
         "path": "ams2.inPits",
         "label": "ams2.inPits",
         "semanticId": "race.on-pit-road",
         "unit": "boolean",
         "dataType": "boolean",
+        "description": "AMS2 recorded shared-memory extension",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "ams2.lapsInEvent",
+        "label": "ams2.lapsInEvent",
+        "semanticId": "timing.total-laps",
+        "unit": "count",
+        "dataType": "number",
         "description": "AMS2 recorded shared-memory extension",
         "sourceKind": "extension",
         "recordedByRaceIQ": true,
@@ -96622,22 +96730,22 @@
         "recorded": 292
       },
       "acc": {
-        "total": 205,
+        "total": 207,
         "packet": 124,
-        "extension": 48,
+        "extension": 50,
         "sdk": 0,
         "yaml": 0,
         "setup": 33,
-        "recorded": 172
+        "recorded": 174
       },
       "ac-evo": {
-        "total": 258,
+        "total": 260,
         "packet": 126,
-        "extension": 100,
+        "extension": 102,
         "sdk": 0,
         "yaml": 0,
         "setup": 32,
-        "recorded": 226
+        "recorded": 228
       },
       "iracing": {
         "total": 952,
@@ -96658,13 +96766,13 @@
         "recorded": 250
       },
       "ams2": {
-        "total": 112,
+        "total": 114,
         "packet": 108,
-        "extension": 4,
+        "extension": 6,
         "sdk": 0,
         "yaml": 0,
         "setup": 0,
-        "recorded": 112
+        "recorded": 114
       }
     }
   }

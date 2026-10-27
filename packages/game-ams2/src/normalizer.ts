@@ -28,6 +28,7 @@ export function normalizeAMS2Frame(raw: Buffer): TelemetryPacket | null {
     ams2: {carName, trackName, trackLengthM: f(L.mTrackLength), lapDistanceM: f(p + 80),
       sessionType: ["invalid","practice","test","qualifying","formation","race","time-attack"][memory.readUInt32LE(L.mSessionState)] ?? "unknown",
       lapInvalidated: memory[L.mLapInvalidated] !== 0, inPits: memory.readUInt32LE(L.mPitMode) !== 0,
+      lapsInEvent: memory.readUInt32LE(L.mLapsInEvent), eventTimeRemainingS: memory.readFloatLE(L.mEventTimeRemaining),
       damage: {aero: f(L.mAeroDamage), engine: f(L.mEngineDamage), suspension: [0, 4, 8, 12].map((o) => f(L.mSuspensionDamage + o)), brake: [0, 4, 8, 12].map((o) => f(L.mBrakeDamage + o))}},
     FuelCapacity: f(L.mFuelCapacity),
     AirTemp: f(L.mAmbientTemperature),
