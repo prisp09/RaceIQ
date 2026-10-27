@@ -336,3 +336,29 @@ describe("race engineer position calls", () => {
     }
   });
 });
+
+describe("race engineer puncture calls", () => {
+  test("calls a puncture once, even in Quiet, and leaves the lap out of pace stats", () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "quiet" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(undefined, () => 0);
+    const at = (rearRight: number) => ({ gameId: "acc", Speed: 50, TirePressureFrontLeft: 27.5, TirePressureFrontRight: 27.6, TirePressureRearLeft: 27.2, TirePressureRearRight: rearRight, acc: { pitStatus: "out" } }) as unknown as TelemetryPacket;
+    try {
+      service.start();
+      emitLiveNotification({ type: "lap-saved", sessionId: 11, lapNumber: 1, lapTime: 100, isValid: true });
+      emitLiveNotification({ type: "lap-saved", sessionId: 11, lapNumber: 2, lapTime: 100.2, isValid: true });
+      said.length = 0;
+      for (let ms = 0; ms <= 30_000; ms += 100) service.punctureTick(at(27.3), ms);
+      for (let ms = 30_100; ms <= 40_000; ms += 100) service.punctureTick(at(Math.max(10, 27.3 - (ms - 30_000) / 300)), ms);
+      expect(said).toEqual(["Puncture, rear right. Box this lap."]);
+      emitLiveNotification({ type: "lap-saved", sessionId: 11, lapNumber: 3, lapTime: 112, isValid: true });
+      expect(service.sessionLaps.at(-1)?.excluded).toBe("puncture on this lap");
+    } finally {
+      service.stop();
+      wsManager.broadcastNotification = original;
+      saveSettings({ ...loadSettings(), engineerMode: "normal" });
+    }
+  });
+});
