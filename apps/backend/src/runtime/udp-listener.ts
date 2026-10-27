@@ -27,6 +27,7 @@ const PACKETS_PER_SEC_WINDOW = 1000;
 
 class UdpListener {
   private _droppedPackets = 0;
+  private _lastProcessErrorLogAt = 0;
   private _totalPackets = 0;
   private _receiving = false;
   private _packetsInWindow = 0;
@@ -224,7 +225,17 @@ class UdpListener {
 
     this._receiving = true;
     if (packet.gameId === "fm-2023") this._forzaRaceActive = true;
-    await processPacket(packet, sourceFrame, frameTimeMs);
+    try {
+      await processPacket(packet, sourceFrame, frameTimeMs);
+    } catch (error) {
+      // The pipeline already reports a failed recording to the UI. Rejecting here would be an
+      // unhandled rejection that takes the whole app down (seen with F1 at ~360 packets/s when
+      // a lap save fills the detector queue), so log it and keep listening.
+      if (frameTimeMs - this._lastProcessErrorLogAt > 5000) {
+        this._lastProcessErrorLogAt = frameTimeMs;
+        console.error("[UDP] Packet processing failed; telemetry continues:", error instanceof Error ? error.message : String(error));
+      }
+    }
   }
 
   async stop(): Promise<void> {
