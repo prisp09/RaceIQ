@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { NamedSegment } from "@raceiq/shared/racing/tracks/named-segments";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
-import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, tipTriggerFrac } from "../../src/engineer/co-driver";
+import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, spokenGain, tipFeedbackCallout, TipHistory, tipOutcomes, TipScheduler, tipTriggerFrac, type CachedTip, type CornerGroupStats } from "../../src/engineer/co-driver";
 import { anomalyReason, summarizeSession, type SessionLapRecord } from "../../src/engineer/session-summary";
 
 const corner = (number: number, startFrac: number, endFrac: number): NamedSegment => ({ type: "corner", name: `T${number}`, number, startFrac, endFrac });
@@ -73,8 +73,63 @@ describe("co-driver tips from the AI", () => {
     const tips = parseTips('Here you go: [{"group":"G1","tip":"Brake ten metres later, use the kerb on exit."},{"group":"G9","tip":"x"}]', groups, [
       { id: "G1", entryKph: 250, minKph: 90, exitKph: 140, brakeMetresBeforeEntry: 120, timeS: 6.2, brakeFrac: 0.076 },
     ]);
-    expect(tips).toEqual([{ groupId: "G1", label: "Turns 1 and 2", text: "Turns 1 and 2: Brake ten metres later, use the kerb on exit.", brakeFrac: 0.076 }]);
+    expect(tips).toEqual([{ groupId: "G1", label: "Turns 1 and 2", text: "Turns 1 and 2: Brake ten metres later, use the kerb on exit.", brakeFrac: 0.076, baselineS: 6.2 }]);
     expect(parseTips("no json", groups, [])).toEqual([]);
+  });
+});
+
+describe("co-driver tip feedback", () => {
+  const stats = (id: string, timeS: number): CornerGroupStats => ({ id, entryKph: 200, minKph: 90, exitKph: 150, brakeMetresBeforeEntry: 100, timeS, brakeFrac: 0.1 });
+  const tip = (groupId: string, label: string, text: string, baselineS: number | null): CachedTip => ({ groupId, label, text: `${label}: ${text}`, brakeFrac: 0.1, baselineS });
+
+  test("measures each played tip against the lap it was written from", () => {
+    const outcomes = tipOutcomes(
+      [tip("G1", "Turn 1", "Brake later.", 6.4), tip("G2", "Turns 8, 9 and 10", "Carry more speed.", 12.5), tip("G3", "Turn 12", "Use the kerb.", null)],
+      [stats("G1", 6.45), stats("G2", 12.28), stats("G3", 5)],
+      new Map([["G2", 12.3]]),
+    );
+    expect(outcomes).toEqual([
+      { groupId: "G1", label: "Turn 1", tip: "Turn 1: Brake later.", gainS: -0.05, groupBest: false },
+      { groupId: "G2", label: "Turns 8, 9 and 10", tip: "Turns 8, 9 and 10: Carry more speed.", gainS: 0.22, groupBest: true },
+    ]);
+  });
+
+  test("ignores a tip whose group wasn't completed", () => {
+    expect(tipOutcomes([tip("G1", "Turn 1", "Brake later.", 6.4)], [], new Map())).toEqual([]);
+  });
+
+  test("confirms only the biggest real gain", () => {
+    const base = { tip: "x", groupBest: false };
+    expect(tipFeedbackCallout([{ ...base, groupId: "G1", label: "Turn 1", gainS: 0.12 }, { ...base, groupId: "G2", label: "Turns 8, 9 and 10", gainS: 0.21, groupBest: true }], () => 0))
+      .toBe("Good, two tenths better through Turns 8, 9 and 10. Best yet through there.");
+    expect(tipFeedbackCallout([{ ...base, groupId: "G1", label: "Turn 1", gainS: 0.08 }], () => 0)).toBeNull();
+    expect(tipFeedbackCallout([], () => 0)).toBeNull();
+  });
+
+  test("speaks gains the way an engineer would", () => {
+    expect(spokenGain(0.12)).toBe("a tenth");
+    expect(spokenGain(0.34)).toBe("three tenths");
+    expect(spokenGain(0.5)).toBe("half a second");
+    expect(spokenGain(1.24)).toBe("1.2 seconds");
+  });
+
+  test("remembers results for the prompt and spots advice that already failed", () => {
+    const history = new TipHistory();
+    history.record([
+      { groupId: "G1", label: "Turn 1", tip: "Turn 1: Brake ten metres later.", gainS: -0.1, groupBest: false },
+      { groupId: "G2", label: "Turn 4", tip: "Turn 4: Use the exit kerb.", gainS: 0.18, groupBest: false },
+      { groupId: "G3", label: "Turn 7", tip: "Turn 7: Earlier on throttle.", gainS: 0.01, groupBest: false },
+    ]);
+    expect(history.forPrompt()).toEqual([
+      { group: "G1", corner: "Turn 1", tip: "Brake ten metres later.", result: "lost 0.10s" },
+      { group: "G2", corner: "Turn 4", tip: "Use the exit kerb.", result: "gained 0.18s" },
+      { group: "G3", corner: "Turn 7", tip: "Earlier on throttle.", result: "no change" },
+    ]);
+    expect(history.failedBefore(tip("G1", "Turn 1", "brake ten metres later", 6))).toBe(true);
+    expect(history.failedBefore(tip("G1", "Turn 1", "Brake five metres later.", 6))).toBe(false);
+    expect(history.failedBefore(tip("G2", "Turn 4", "Use the exit kerb.", 6))).toBe(false);
+    history.clear();
+    expect(history.forPrompt()).toEqual([]);
   });
 });
 

@@ -9,6 +9,7 @@
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 import type { NamedSegment } from "@raceiq/shared/racing/tracks/named-segments";
 import { turnNumbers } from "@raceiq/shared/racing/tracks/segment-label";
+import { pick, type Rng } from "./rules";
 
 export type CornerGroup = { id: string; label: string; startFrac: number; endFrac: number };
 export type CornerGroupStats = {
@@ -133,7 +134,8 @@ export function tipTriggerFrac(brakeFrac: number, speedMps: number, trackLength:
   return brakeFrac - leadMetres / trackLength;
 }
 
-export type CachedTip = { groupId: string; label: string; text: string; brakeFrac: number };
+/** `baselineS` is the time through the group on the lap the tip was written from. */
+export type CachedTip = { groupId: string; label: string; text: string; brakeFrac: number; baselineS?: number | null };
 
 /**
  * Plays cached tips once per lap, ahead of each group's braking point. Never
@@ -197,7 +199,7 @@ export function parseTips(raw: string, groups: readonly CornerGroup[], stats: re
   try { parsed = JSON.parse(match[0]); } catch { return []; }
   if (!Array.isArray(parsed)) return [];
   const byId = new Map(groups.map((group) => [group.id, group]));
-  const brakeById = new Map(stats.map((entry) => [entry.id, entry.brakeFrac]));
+  const statsById = new Map(stats.map((entry) => [entry.id, entry]));
   const tips: CachedTip[] = [];
   for (const item of parsed) {
     if (!item || typeof item !== "object") continue;
@@ -205,7 +207,98 @@ export function parseTips(raw: string, groups: readonly CornerGroup[], stats: re
     const text = String((item as { tip?: unknown }).tip ?? "").replace(/\s+/g, " ").trim();
     const group = byId.get(id);
     if (!group || !text) continue;
-    tips.push({ groupId: id, label: group.label, text: text.toLowerCase().startsWith(group.label.toLowerCase()) ? text : `${group.label}: ${text}`, brakeFrac: brakeById.get(id) ?? group.startFrac });
+    const recorded = statsById.get(id);
+    tips.push({ groupId: id, label: group.label, text: text.toLowerCase().startsWith(group.label.toLowerCase()) ? text : `${group.label}: ${text}`, brakeFrac: recorded?.brakeFrac ?? group.startFrac, baselineS: recorded?.timeS ?? null });
   }
   return tips;
+}
+
+/** A tip gained (or lost) less than this through its group: treated as no change. */
+export const TIP_HELPED_S = 0.05;
+/** Only gains at least this big are worth a radio call. */
+export const TIP_FEEDBACK_MIN_GAIN_S = 0.1;
+/** Laps between tip feedback calls, so they stay occasional. */
+export const TIP_FEEDBACK_EVERY_LAPS = 2;
+const TIP_HISTORY_PER_GROUP = 3;
+
+export type TipOutcome = {
+  groupId: string;
+  label: string;
+  tip: string;
+  /** Seconds gained through the group against the lap the tip was written from; negative is a loss. */
+  gainS: number;
+  /** The group was driven faster than ever before this session. */
+  groupBest: boolean;
+};
+
+/** How each tip played on the last lap changed the time through its group. */
+export function tipOutcomes(played: readonly CachedTip[], lastLap: readonly CornerGroupStats[], groupBestS: ReadonlyMap<string, number>): TipOutcome[] {
+  const now = new Map(lastLap.map((entry) => [entry.id, entry.timeS]));
+  const outcomes: TipOutcome[] = [];
+  for (const tip of played) {
+    const timeS = now.get(tip.groupId);
+    if (timeS === undefined || tip.baselineS == null || timeS <= 0 || tip.baselineS <= 0) continue;
+    const best = groupBestS.get(tip.groupId);
+    outcomes.push({ groupId: tip.groupId, label: tip.label, tip: tip.text, gainS: Number((tip.baselineS - timeS).toFixed(2)), groupBest: best !== undefined && timeS < best });
+  }
+  return outcomes;
+}
+
+/** "a tenth", "two tenths", "half a second", "1.2 seconds" */
+export function spokenGain(seconds: number): string {
+  const tenths = Math.round(seconds * 10);
+  if (tenths >= 10) return `${(tenths / 10).toFixed(1)} seconds`;
+  if (tenths === 5) return "half a second";
+  if (tenths <= 1) return "a tenth";
+  const words = ["", "", "two", "three", "four", "", "six", "seven", "eight", "nine"];
+  return `${words[tenths]} tenths`;
+}
+
+/** At most one short confirmation for the tip that gained the most, or null when none gained enough. */
+export function tipFeedbackCallout(outcomes: readonly TipOutcome[], rng: Rng = Math.random): string | null {
+  const top = outcomes.filter((outcome) => outcome.gainS >= TIP_FEEDBACK_MIN_GAIN_S).sort((a, b) => b.gainS - a.gainS)[0];
+  if (!top) return null;
+  const gain = spokenGain(top.gainS);
+  const lines = [`Good, ${gain} better through ${top.label}.`, `That's it, ${gain} quicker through ${top.label}.`, `Nice, ${gain} found through ${top.label}.`];
+  const line = pick(lines, rng);
+  return top.groupBest ? `${line} Best yet through there.` : line;
+}
+
+function normalizedTip(text: string, label: string): string {
+  const body = text.toLowerCase().startsWith(label.toLowerCase()) ? text.slice(label.length) : text;
+  return body.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Remembers how recent tips worked out, per corner group, for the next tip prompt. */
+export class TipHistory {
+  private byGroup = new Map<string, TipOutcome[]>();
+
+  record(outcomes: readonly TipOutcome[]): void {
+    for (const outcome of outcomes) {
+      const list = this.byGroup.get(outcome.groupId) ?? [];
+      list.push(outcome);
+      if (list.length > TIP_HISTORY_PER_GROUP) list.shift();
+      this.byGroup.set(outcome.groupId, list);
+    }
+  }
+
+  clear(): void {
+    this.byGroup.clear();
+  }
+
+  /** Earlier tips and their result, for the AI. */
+  forPrompt(): Array<{ group: string; corner: string; tip: string; result: string }> {
+    return [...this.byGroup.values()].flat().map((outcome) => ({
+      group: outcome.groupId,
+      corner: outcome.label,
+      tip: outcome.tip.slice(outcome.label.length).replace(/^[:,\s]+/, "") || outcome.tip,
+      result: outcome.gainS >= TIP_HELPED_S ? `gained ${outcome.gainS.toFixed(2)}s` : outcome.gainS <= -TIP_HELPED_S ? `lost ${(-outcome.gainS).toFixed(2)}s` : "no change",
+    }));
+  }
+
+  /** The same advice already failed to gain time through this group. */
+  failedBefore(tip: CachedTip): boolean {
+    const wanted = normalizedTip(tip.text, tip.label);
+    return (this.byGroup.get(tip.groupId) ?? []).some((outcome) => outcome.gainS < TIP_HELPED_S && normalizedTip(outcome.tip, outcome.label) === wanted);
+  }
 }
