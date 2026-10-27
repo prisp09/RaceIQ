@@ -3053,5 +3053,8 @@
   "engineer_close_window": "Закрити вікно",
   "engineer_popped_out": "Радіо відкрито в окремому вікні.",
   "engineer_bring_back": "Повернути",
-  "engineer_jump_latest": "До останніх"
+  "engineer_jump_latest": "До останніх",
+  "engineer_usage_cost": "ШІ в цій сесії: {calls} викликів · {tokens} токенів · близько {cost} (оцінка)",
+  "engineer_usage_tokens": "ШІ в цій сесії: {calls} викликів · {tokens} токенів",
+  "engineer_usage_detail": "Вхід {input}, читання кешу {cacheRead}, запис кешу {cacheWrite}, вихід {output}. Вартість — оцінка за прейскурантом; для моделей без відомої ціни показуються лише токени."
 }

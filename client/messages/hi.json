@@ -3054,5 +3054,8 @@
   "engineer_close_window": "विंडो बंद करें",
   "engineer_popped_out": "रेडियो अपनी अलग विंडो में है।",
   "engineer_bring_back": "वापस लाएँ",
-  "engineer_jump_latest": "नवीनतम पर जाएँ"
+  "engineer_jump_latest": "नवीनतम पर जाएँ",
+  "engineer_usage_cost": "इस सत्र में AI: {calls} कॉल · {tokens} टोकन · लगभग {cost} (अनुमान)",
+  "engineer_usage_tokens": "इस सत्र में AI: {calls} कॉल · {tokens} टोकन",
+  "engineer_usage_detail": "इनपुट {input}, कैश रीड {cacheRead}, कैश राइट {cacheWrite}, आउटपुट {output}। लागत सूची मूल्यों से अनुमानित है; जिन मॉडलों की कीमत ज्ञात नहीं है, उनके केवल टोकन गिने जाते हैं।"
 }

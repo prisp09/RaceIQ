@@ -7,6 +7,7 @@ apps/backend/test/engineer/puncture.test.ts
 apps/backend/test/engineer/race-gaps.test.ts
 apps/backend/test/engineer/rules.test.ts
 apps/backend/test/engineer/strategy.test.ts
+apps/backend/test/engineer/usage.test.ts
 apps/backend/test/games/shared/parser.test.ts
 apps/backend/test/lap-analysis/clean-lap-aggregate.test.ts
 apps/backend/test/ai/setup-output-contract.test.ts

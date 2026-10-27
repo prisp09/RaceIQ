@@ -3053,5 +3053,8 @@
   "engineer_close_window": "ウィンドウを閉じる",
   "engineer_popped_out": "無線は別ウィンドウで開いています。",
   "engineer_bring_back": "元に戻す",
-  "engineer_jump_latest": "最新へ移動"
+  "engineer_jump_latest": "最新へ移動",
+  "engineer_usage_cost": "このセッションのAI: {calls}回の呼び出し · {tokens}トークン · 約{cost}（概算）",
+  "engineer_usage_tokens": "このセッションのAI: {calls}回の呼び出し · {tokens}トークン",
+  "engineer_usage_detail": "入力 {input}、キャッシュ読み取り {cacheRead}、キャッシュ書き込み {cacheWrite}、出力 {output}。費用は公開価格による概算です。価格が不明なモデルはトークン数のみ表示します。"
 }

@@ -12,6 +12,7 @@ import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
 import { resolveAi } from "../ai/ai-runtime";
 import { getAiProviderApiKey } from "@raceiq/backend-core/ai/openai-compatible-provider";
 import { generateWithClaude } from "./claude-native";
+import { engineerUsage, type UsageSummary } from "./usage";
 import { buildDriverDossier } from "./dossier";
 import { EngineerLiveState, type IssueEvent } from "./state";
 import {
@@ -127,7 +128,10 @@ const defaultGenerate: EngineerGenerate = async (system, prompt, stablePrefix = 
     const apiKey = await getAiProviderApiKey("anthropic");
     if (apiKey) {
       try {
-        return (await generateWithClaude({ apiKey, model, stablePrefix, instructions: system, prompt, maxTokens: ENGINEER_MAX_OUTPUT_TOKENS })).text;
+        const reply = await generateWithClaude({ apiKey, model, stablePrefix, instructions: system, prompt, maxTokens: ENGINEER_MAX_OUTPUT_TOKENS });
+        // Native usage: input_tokens already excludes cache reads and writes.
+        engineerUsage.add({ provider: "anthropic", model, ...reply.usage });
+        return reply.text;
       } catch (error) {
         console.warn("[Engineer] Native Claude call failed; using the compatibility path:", error instanceof Error ? error.message : String(error));
       }
@@ -135,6 +139,16 @@ const defaultGenerate: EngineerGenerate = async (system, prompt, stablePrefix = 
   }
   const ai = await resolveAi("liveEngineer");
   const result = await ai.generateText({ system: stablePrefix ? `${stablePrefix}\n\n${system}` : system, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
+  // Chat-completions style usage counts cached tokens inside the prompt total.
+  const cacheReadTokens = result.usage.cacheReadTokens ?? 0;
+  engineerUsage.add({
+    provider: ai.provider,
+    model: result.usage.model || ai.model,
+    inputTokens: Math.max(0, result.usage.inputTokens - cacheReadTokens),
+    outputTokens: result.usage.outputTokens + (result.usage.reasoningTokens ?? 0),
+    cacheReadTokens,
+    cacheWriteTokens: 0,
+  });
   return stripReasoning(String(result.analysis ?? ""));
 };
 
@@ -151,6 +165,7 @@ export class EngineerService {
   private thinking = false;
   private untap: (() => void) | null = null;
   private settingsTimer: ReturnType<typeof setInterval> | null = null;
+  private unwatchUsage: (() => void) | null = null;
   private readonly ptt: PushToTalkWatcher;
 
   private readonly generate: EngineerGenerate;
@@ -220,6 +235,7 @@ export class EngineerService {
     });
     this.refreshSettings();
     this.settingsTimer = setInterval(() => this.refreshSettings(), 2000);
+    this.unwatchUsage = engineerUsage.onChange((usage) => wsManager.broadcastNotification({ type: "engineer-usage", usage }));
   }
 
   stop(): void {
@@ -227,6 +243,8 @@ export class EngineerService {
     this.untap = null;
     if (this.settingsTimer) clearInterval(this.settingsTimer);
     this.settingsTimer = null;
+    this.unwatchUsage?.();
+    this.unwatchUsage = null;
     this.ptt.stop();
   }
 
@@ -269,6 +287,7 @@ export class EngineerService {
     this.gaps.reset();
     this.punctures.reset();
     this.punctureThisLap = false;
+    engineerUsage.reset();
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
   }
 
@@ -302,7 +321,13 @@ export class EngineerService {
       thinking: this.thinking,
       instructions: [...this.instructions],
       transcript: this.transcript.slice(-20),
+      usage: this.usage(),
     };
+  }
+
+  /** AI tokens and estimated cost for this session. */
+  usage(): UsageSummary {
+    return engineerUsage.summary();
   }
 
   say(callout: Pick<Callout, "key" | "priority" | "text">, kind: EngineerSayKind = "callout"): void {

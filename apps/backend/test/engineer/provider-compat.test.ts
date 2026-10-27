@@ -102,6 +102,32 @@ describe("race engineer provider compatibility", () => {
   });
 });
 
+describe("usage reported for the engineer's cost readout", () => {
+  test("OpenAI reports cached prompt tokens", async () => {
+    const adapter = new OpenAiProviderAdapter({ feature: "liveEngineer", model: "gpt-4o-mini", apiKey: "sk-test" });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify({ ...openAiCompletion, usage: { prompt_tokens: 1200, completion_tokens: 30, prompt_tokens_details: { cached_tokens: 1024 } } }))) as unknown as typeof fetch;
+    try {
+      const result = await adapter.generateText(engineerRequest);
+      expect(result.usage).toMatchObject({ inputTokens: 1200, outputTokens: 30, cacheReadTokens: 1024 });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("Gemini reports cached and thinking tokens", async () => {
+    const adapter = new GeminiProviderAdapter({ feature: "liveEngineer", model: "gemini-2.5-flash", apiKey: "g-test" });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify({ ...geminiCompletion, usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 20, cachedContentTokenCount: 512, thoughtsTokenCount: 300 } }))) as unknown as typeof fetch;
+    try {
+      const result = await adapter.generateText(engineerRequest);
+      expect(result.usage).toMatchObject({ inputTokens: 900, outputTokens: 20, cacheReadTokens: 512, reasoningTokens: 300 });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
 describe("stripReasoning", () => {
   test("removes complete think blocks", () => {
     expect(stripReasoning("<think>gap is 1.2s</think>Gap is 1.2 seconds.")).toBe("Gap is 1.2 seconds.");

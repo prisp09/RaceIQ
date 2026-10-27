@@ -3053,5 +3053,8 @@
   "engineer_close_window": "Chiudi finestra",
   "engineer_popped_out": "La radio è in una finestra separata.",
   "engineer_bring_back": "Riporta qui",
-  "engineer_jump_latest": "Vai all'ultimo"
+  "engineer_jump_latest": "Vai all'ultimo",
+  "engineer_usage_cost": "IA in questa sessione: {calls} chiamate · {tokens} token · circa {cost} (stima)",
+  "engineer_usage_tokens": "IA in questa sessione: {calls} chiamate · {tokens} token",
+  "engineer_usage_detail": "Input {input}, lettura cache {cacheRead}, scrittura cache {cacheWrite}, output {output}. Il costo è una stima dai prezzi di listino; i modelli senza prezzo noto contano solo i token."
 }
