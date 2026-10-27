@@ -50,11 +50,15 @@ export class PitTracker {
   private lastCurrentLap = 0;
   private sessionLapCount = 0;
 
+  /** Bumped by reset() so a history seed still loading for an old session is dropped. */
+  private seedEpoch = 0;
+
   // Health thresholds supplied by the active adapter.
   private badHealthThreshold = 0.4;
   private tireWearAvailable = true;
 
   reset(): void {
+    this.seedEpoch++;
     this.fuelHistory = [];
     this.fuelAtLapStart = -1;
     this.lastLap = -1;
@@ -85,10 +89,16 @@ export class PitTracker {
   /**
    * Seed enabled fuel and tire histories from previous sessions.
    * The active adapter decides which historical signals are comparable.
+   *
+   * Fuel comes from the per-lap fuel use stored when each lap was saved. Tire
+   * wear needs the lap's telemetry, and decoding it blocks the event loop for
+   * a few hundred milliseconds per lap, so at most one lap is decoded. Runs
+   * beside live packets: a reset() while it loads discards the result.
    */
   async seedFromHistory(trackIdentity: string, carIdentity: string, currentCarPI: number, gameId: GameId, pitRuntime: ServerGameRuntimePolicy["pit"]): Promise<void> {
     const seedFuel = pitRuntime.seedFuelFromHistory;
     const seedTires = this.tireWearAvailable && pitRuntime.seedTireWearFromHistory;
+    const epoch = this.seedEpoch;
     try {
       const allLaps = await getLaps(gameId, 200);
       const matching = allLaps
@@ -96,37 +106,29 @@ export class PitTracker {
         .sort((a: LapMeta, b: LapMeta) => b.id - a.id)
         .slice(0, 5);
 
-      const fuelRates: number[] = [];
+      const fuelRates = seedFuel
+        ? matching.flatMap((lap) => (typeof lap.fuelPerLap === "number" && Number.isFinite(lap.fuelPerLap) && lap.fuelPerLap > 0 ? [lap.fuelPerLap] : [])).slice(0, 2)
+        : [];
       const wearRates: { fl: number; fr: number; rl: number; rr: number }[] = [];
 
-      for (const lapMeta of matching) {
-        if ((!seedFuel || fuelRates.length >= 2) && (!seedTires || wearRates.length >= 1)) break;
-        const lap = await getLapById(lapMeta.id);
-        if (!lap?.telemetry || lap.telemetry.length < 50) continue;
-
-        const first = lap.telemetry[0];
-        const last = lap.telemetry[lap.telemetry.length - 1];
-
-        // Fuel
-        const fuelUsed = first.Fuel - last.Fuel;
-        if (fuelUsed > 0 && fuelRates.length < 2) {
-          fuelRates.push(fuelUsed);
-        }
-
-        // Tire wear is only read when the adapter marks history comparable.
-        if (seedTires && wearRates.length < 1) {
+      // Tire wear is only read when the adapter marks history comparable.
+      const wearLap = seedTires ? matching[0] : undefined;
+      if (wearLap) {
+        const lap = await getLapById(wearLap.id);
+        if (lap?.telemetry && lap.telemetry.length >= 50) {
+          const first = lap.telemetry[0];
+          const last = lap.telemetry[lap.telemetry.length - 1];
           const worn = {
             fl: Math.max(0, last.TireWearFL - first.TireWearFL),
             fr: Math.max(0, last.TireWearFR - first.TireWearFR),
             rl: Math.max(0, last.TireWearRL - first.TireWearRL),
             rr: Math.max(0, last.TireWearRR - first.TireWearRR),
           };
-          if (Math.max(worn.fl, worn.fr, worn.rl, worn.rr) > 0) {
-            wearRates.push(worn);
-          }
+          if (Math.max(worn.fl, worn.fr, worn.rl, worn.rr) > 0) wearRates.push(worn);
         }
       }
 
+      if (epoch !== this.seedEpoch) return;
       if (seedFuel) this.fuelHistory.push(...fuelRates);
       if (seedTires) this.tireWearHistory.push(...wearRates);
 
