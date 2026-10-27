@@ -14,6 +14,8 @@ export interface F1SessionData {
 export interface F1LapCarData {
   currentLapTime: number; lastLapTime: number; bestLapTime: number;
   position: number; pitStatus: number; numPitStops: number; totalDistance: number;
+  /** Native m_deltaToCarInFront, seconds (0 for the leader). */
+  deltaToCarInFront?: number;
 }
 export interface F1LapData {
   currentLapTime: number; lastLapTime: number; bestLapTime: number;
@@ -107,7 +109,7 @@ export function decodeF1Session(data: Buffer): F1SessionData | null {
 }
 export function decodeF1LapData(data: Buffer, playerCarIndex: number): F1LapData | null {
   const size = 57; const allCars: F1LapCarData[] = [];
-  for (let i = 0; i < 22 && data.length >= (i + 1) * size; i++) { const o = i * size; allCars.push({ lastLapTime: data.readUInt32LE(o) / 1000, currentLapTime: data.readUInt32LE(o + 4) / 1000, bestLapTime: 0, position: data.readUInt8(o + 32), pitStatus: data.readUInt8(o + 34), numPitStops: data.readUInt8(o + 35), totalDistance: data.readFloatLE(o + 24) }); }
+  for (let i = 0; i < 22 && data.length >= (i + 1) * size; i++) { const o = i * size; allCars.push({ lastLapTime: data.readUInt32LE(o) / 1000, currentLapTime: data.readUInt32LE(o + 4) / 1000, bestLapTime: 0, position: data.readUInt8(o + 32), pitStatus: data.readUInt8(o + 34), numPitStops: data.readUInt8(o + 35), totalDistance: data.readFloatLE(o + 24), deltaToCarInFront: (data.readUInt8(o + 16) * 60000 + data.readUInt16LE(o + 14)) / 1000 }); }
   const o = playerCarIndex * size; if (data.length < o + size) return null;
   const s1 = data.readUInt8(o + 10) * 60000 + data.readUInt16LE(o + 8); const s2 = data.readUInt8(o + 13) * 60000 + data.readUInt16LE(o + 11);
   return { lastLapTime: data.readUInt32LE(o) / 1000, currentLapTime: data.readUInt32LE(o + 4) / 1000, bestLapTime: 0, currentLapNum: data.readUInt8(o + 33), position: data.readUInt8(o + 32), totalDistance: data.readFloatLE(o + 24), lapDistance: data.readFloatLE(o + 20), sector: data.readUInt8(o + 36), sector1Time: s1 / 1000, sector2Time: s2 / 1000, currentLapInvalid: data.readUInt8(o + 37), penalties: data.readUInt8(o + 38), totalWarnings: data.readUInt8(o + 39), cornerCuttingWarnings: data.readUInt8(o + 40), driverStatus: data.readUInt8(o + 44), resultStatus: data.readUInt8(o + 45), pitLaneTimerActive: data.readUInt8(o + 46), pitLaneTimeInLaneInMS: data.readUInt16LE(o + 47), speedTrapFastestSpeed: data.readFloatLE(o + 52), gridPosition: data.readUInt8(o + 43), allCars };

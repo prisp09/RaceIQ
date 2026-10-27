@@ -385,6 +385,7 @@ export class F1StateAccumulator {
           bestLapTime: history?.bestLapTime ?? car.bestLapTime,
           gapToLeader: car.position === 1 ? 0 : (leaderBestDist - car.totalDistance) / Math.max(1, ct.speed / 3.6),
           gapToCarAhead: 0, // computed after sort
+          ...(car.deltaToCarInFront === undefined ? {} : { deltaToCarInFront: car.deltaToCarInFront }),
           pitStatus: car.pitStatus,
           numPitStops: car.numPitStops,
           tyreCompound: csEntry ? getF1CompoundName(csEntry.tyreVisualCompound) : "unknown",

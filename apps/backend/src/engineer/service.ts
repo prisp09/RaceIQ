@@ -33,6 +33,7 @@ import type { LapClassification } from "@raceiq/shared/racing/lap-classification
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TIP_FEEDBACK_EVERY_LAPS, tipFeedbackCallout, TipHistory, tipOutcomes, TipScheduler, type CachedTip, type CornerGroup, type CornerGroupStats } from "./co-driver";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 import { tryGetGame } from "@raceiq/shared/games/registry";
+import { RaceGapCaller, readGaps } from "./race-gaps";
 import { FuelTracker, fuelPlan, isRaceSession, lapsToGo, raceLength, StrategyCaller, strategyContext, worstTyre, type FuelPlan, type StrategyInput } from "./strategy";
 
 export type EngineerSessionType = "practice" | "qualifying" | "race";
@@ -176,6 +177,7 @@ export class EngineerService {
   private lapsSinceTipFeedback = TIP_FEEDBACK_EVERY_LAPS;
   readonly fuel = new FuelTracker();
   private readonly strategy = new StrategyCaller();
+  readonly gaps = new RaceGapCaller();
   private readonly impacts = new ImpactDetector();
   private damageHistory: { at: number; reading: DamageReading }[] = [];
   private pendingCrash: { impact: Impact; before: DamageReading | null; settleAt: number } | null = null;
@@ -202,6 +204,7 @@ export class EngineerService {
         this.state.update(packet, sectors, pit);
         this.fuel.update(packet);
         this.coDriverTick(packet);
+        this.gapsTick(packet);
         this.crashTick(packet);
       },
       onNotification: (event) => {
@@ -258,6 +261,7 @@ export class EngineerService {
     this.sessionLaps.length = 0;
     this.fuel.reset();
     this.strategy.reset();
+    this.gaps.reset();
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
   }
 
@@ -317,6 +321,7 @@ export class EngineerService {
         `Session so far (JSON): ${JSON.stringify(summarizeSession(this.sessionLaps))}`,
         `Corner splits, last lap vs best lap (JSON): ${JSON.stringify(this.cornerSplits())}`,
         `Strategy (JSON): ${JSON.stringify(this.strategyFacts())}`,
+        `Race position and gaps (JSON): ${JSON.stringify(this.gaps.context())}`,
         `Engineer mode: ${this.mode}. Active callouts: ${[...this.instructions].join(", ") || "none"}.`,
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
@@ -376,6 +381,7 @@ export class EngineerService {
       this.bestLap = 0;
       this.lapsSinceStatus = 0;
       this.strategy.reset();
+      this.gaps.reset();
     }
     const isValid = event.isValid !== false;
     const previousBest = this.bestLap;
@@ -394,7 +400,7 @@ export class EngineerService {
       // Critical calls (fuel, tyres) still matter on any lap; everything else waits for a real lap.
       const critical = lapCompleteCallouts(this.mode, { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest, pit: this.state.pit, lastLapIssues: new Map(), lapsSinceStatus: 0 }, this.rng).filter((call) => call.priority === 2);
       for (const call of critical) this.say(call);
-      this.strategyCalls(lapsCompleted, critical);
+      this.raceCalls(lapsCompleted, critical);
       return;
     }
     if (this.crashPaceCheck) {
@@ -417,12 +423,12 @@ export class EngineerService {
     if (isValid && (this.bestLap <= 0 || lapTime < this.bestLap)) this.bestLap = lapTime;
     if (mode !== "coach" && mode !== "co-driver") {
       for (const call of calls) this.say(call);
-      this.strategyCalls(lapsCompleted, calls);
+      this.raceCalls(lapsCompleted, calls);
       return;
     }
     // Coach and Co-driver: critical calls stay instant; AI replaces every other after-lap call.
     for (const call of calls) if (call.priority === 2) this.say(call);
-    this.strategyCalls(lapsCompleted, calls);
+    this.raceCalls(lapsCompleted, calls);
     const lap = { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest };
     // Co-driver without a corner map (or before one loads) behaves like Coach.
     const coDriver = mode === "co-driver" && this.coGroups.length > 0;
@@ -450,17 +456,41 @@ export class EngineerService {
     return { lapsCompleted, plan, tyre: worstTyre(this.state.pit), pitWindow };
   }
 
-  /** Race only: fuel, tyre and pit-window calls when the picture changes. Quiet keeps only must-act calls. */
-  private strategyCalls(lapsCompleted: number, alreadySaid: readonly Callout[]): void {
+  /**
+   * Race only, after each lap: fuel, tyre and pit-window calls when the picture
+   * changes, else the gap trend. Quiet keeps only must-act calls.
+   */
+  private raceCalls(lapsCompleted: number, alreadySaid: readonly Callout[]): void {
+    const gapCall = this.gaps.lapEnd(this.state.packet ? readGaps(this.state.packet) : null);
     if (!isRaceSession(this.state.packet, this.sessionType)) return;
-    const calls = this.strategy.afterLap(this.strategyInput(lapsCompleted), this.rng);
-    for (const call of calls) {
+    let said = false;
+    for (const call of this.strategy.afterLap(this.strategyInput(lapsCompleted), this.rng)) {
       // The critical fuel or tyre call already covers it this lap.
-      if (call.key === "strategy-fuel" && alreadySaid.some((said) => said.key === "fuel-critical")) continue;
-      if (call.key === "strategy-tyres" && alreadySaid.some((said) => said.key === "tyres-critical")) continue;
+      if (call.key === "strategy-fuel" && alreadySaid.some((entry) => entry.key === "fuel-critical")) continue;
+      if (call.key === "strategy-tyres" && alreadySaid.some((entry) => entry.key === "tyres-critical")) continue;
       if (call.priority < 2 && this.mode === "quiet") continue;
       this.say(call);
+      said = true;
     }
+    if (gapCall && !said && this.mode !== "quiet") this.say(gapCall);
+  }
+
+  /** Race only: position changes and defend/attack calls as they happen. */
+  gapsTick(packet: TelemetryPacket, nowMs = Date.now()): void {
+    const reading = readGaps(packet);
+    if (!isRaceSession(packet, this.sessionType)) {
+      this.gaps.latest = reading;
+      return;
+    }
+    const call = this.gaps.tick(reading, nowMs, this.nextCorner(), this.sessionLaps.length === 0, this.rng);
+    if (call && this.mode !== "quiet") this.say(call);
+  }
+
+  /** Name of the next corner group ahead of the car, if the track has a corner map. */
+  private nextCorner(): string | null {
+    const frac = this.state.lapFraction;
+    if (frac === null || this.coGroups.length === 0) return null;
+    return (this.coGroups.find((group) => group.startFrac > frac) ?? this.coGroups[0])!.label;
   }
 
   /** Per-corner-group time on the last lap against the best lap, for questions. */

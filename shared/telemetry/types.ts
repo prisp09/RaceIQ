@@ -24,6 +24,8 @@ export interface TelemetryPacket {
   ams2?: {carName: string; trackName: string; trackLengthM: number; lapDistanceM: number; sessionType: string; lapInvalidated: boolean; inPits: boolean;
     /** mLapsInEvent (0 when time-limited) and mEventTimeRemaining in seconds (negative when not timed). */
     lapsInEvent?: number; eventTimeRemainingS?: number;
+    /** mSplitTimeAhead / mSplitTimeBehind: seconds to the cars one position ahead and behind. */
+    splitTimeAheadS?: number; splitTimeBehindS?: number;
     /** 0-1 per part; suspension and brake per wheel FL, FR, RL, RR. */
     damage?: {aero: number; engine: number; suspension: number[]; brake: number[]}};
   lmuContext?: LmuLiveContext;

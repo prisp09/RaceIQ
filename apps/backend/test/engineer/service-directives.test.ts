@@ -305,3 +305,34 @@ describe("race engineer fuel strategy", () => {
     }
   });
 });
+
+describe("race engineer position calls", () => {
+  test("calls a settled overtake in a race, after the opening lap, and never in practice", () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "normal" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const at = (position: number) => ({ gameId: "acc", IsRaceOn: 1, RacePosition: position, acc: { sessionType: "race", gapAheadS: 3, gapBehindS: -3 } }) as unknown as TelemetryPacket;
+    const service = new EngineerService(undefined, () => 0);
+    try {
+      service.newSession("race");
+      service.gapsTick(at(9), 0);
+      service.gapsTick(at(8), 1000);
+      service.gapsTick(at(8), 5000);
+      expect(said).toEqual([]); // opening lap
+      service.sessionLaps.push({ lap: 1, timeS: 100, valid: true, sectorTimesS: [], mistakes: {}, position: 8 });
+      service.gapsTick(at(7), 10_000);
+      service.gapsTick(at(7), 14_000);
+      expect(said).toEqual(["P7. Nice move."]);
+      service.newSession("practice");
+      said.length = 0;
+      service.gapsTick(at(7), 20_000);
+      service.gapsTick(at(6), 21_000);
+      service.gapsTick(at(6), 25_000);
+      expect(said).toEqual([]);
+      expect(service.gaps.context()).toEqual({ position: 6, gapAheadS: 3, gapBehindS: 3 });
+    } finally {
+      wsManager.broadcastNotification = original;
+    }
+  });
+});

@@ -235,6 +235,9 @@ export const GRAPHICS = {
   // trackStatus wchar_t[33] at 1416 (66 bytes) + 2 pad → 1484
   missingMandatoryPits: { offset: 1484, type: "i32" },
   clock:            { offset: 1488, type: "f32" },   // seconds
+  // ... flags, MFD and rain forecast fields (1492-1579)
+  gapAhead:         { offset: 1580, type: "i32" },   // ms to the car one position ahead
+  gapBehind:        { offset: 1584, type: "i32" },   // ms to the car one position behind (negative)
 } as const;
 
 // --- SPageFileStatic ---
