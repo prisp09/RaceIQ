@@ -21,7 +21,9 @@ export interface TelemetryPacket {
   acc?: KunosExtendedData;
   iracing?: IRacingExtendedData;
   lmu?: LMUExtendedData;
-  ams2?: {carName: string; trackName: string; trackLengthM: number; lapDistanceM: number; sessionType: string; lapInvalidated: boolean; inPits: boolean};
+  ams2?: {carName: string; trackName: string; trackLengthM: number; lapDistanceM: number; sessionType: string; lapInvalidated: boolean; inPits: boolean;
+    /** 0-1 per part; suspension and brake per wheel FL, FR, RL, RR. */
+    damage?: {aero: number; engine: number; suspension: number[]; brake: number[]}};
   lmuContext?: LmuLiveContext;
   extendedRaceIQ?: RaceIQExtendedData;
 

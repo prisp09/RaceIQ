@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { emitLiveNotification } from "@raceiq/backend-core/live-engineer/tap";
 import { loadSettings, saveSettings } from "@raceiq/backend-core/runtime/config/settings";
 import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
-import { EngineerService } from "../../src/engineer/service";
+import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
+import { CRASH_SETTLE_MS, EngineerService } from "../../src/engineer/service";
 
 describe("race engineer reply directives", () => {
   test("strips and applies instruction lines", () => {
@@ -136,6 +137,37 @@ describe("race engineer ignores anomalous laps", () => {
       emitLiveNotification({ type: "lap-saved", sessionId: 9, lapNumber: 4, lapTime: 300, isValid: true, classification: "pace" });
       expect(said).toEqual(["Purple lap. 2:00.0. Good job.", "2:01.0, plus 1.0. Push now."]);
       expect(service.sessionLaps.map((lap) => Boolean(lap.excluded))).toEqual([true, false, false, true]);
+    } finally {
+      service.stop();
+      wsManager.broadcastNotification = original;
+    }
+  });
+});
+
+describe("race engineer crash calls", () => {
+  const f1Packet = (speed: number, x: number, wing: number) =>
+    ({ IsRaceOn: 1, Speed: speed, PositionX: x, PositionZ: 0, AccelerationX: 0, AccelerationZ: 0, f1: { frontLeftWingDamage: wing, frontRightWingDamage: 0 } }) as unknown as TelemetryPacket;
+
+  test("one call after the damage settles, and the crash lap is left out of pace stats", () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "normal" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(undefined, () => 0);
+    try {
+      service.start();
+      emitLiveNotification({ type: "lap-saved", sessionId: 7, lapNumber: 1, lapTime: 100, isValid: true });
+      emitLiveNotification({ type: "lap-saved", sessionId: 7, lapNumber: 2, lapTime: 100.4, isValid: true });
+      said.length = 0;
+      [60, 60, 60, 35, 10, 5].forEach((speed, index) => service.crashTick(f1Packet(speed, index * 2, index >= 4 ? 30 : 0), index * 50));
+      expect(said).toEqual([]);
+      service.crashTick(f1Packet(30, 20, 30), 300 + CRASH_SETTLE_MS);
+      service.crashTick(f1Packet(30, 22, 30), 400 + CRASH_SETTLE_MS);
+      expect(said).toEqual(["Front wing damage, expect understeer. Brake a touch earlier."]);
+      emitLiveNotification({ type: "lap-saved", sessionId: 7, lapNumber: 3, lapTime: 130, isValid: true });
+      expect(service.sessionLaps.at(-1)?.excluded).toBe("crash or heavy impact on this lap");
+      emitLiveNotification({ type: "lap-saved", sessionId: 7, lapNumber: 4, lapTime: 104, isValid: true });
+      expect(said.at(-2)).toBe("That damage is costing 3.8 a lap. Box this lap.");
     } finally {
       service.stop();
       wsManager.broadcastNotification = original;
