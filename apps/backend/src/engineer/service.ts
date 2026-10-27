@@ -34,6 +34,7 @@ import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TIP_FEEDBACK
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 import { tryGetGame } from "@raceiq/shared/games/registry";
 import { RaceGapCaller, readGaps } from "./race-gaps";
+import { punctureCallout, PunctureDetector, readPressures } from "./puncture";
 import { FuelTracker, fuelPlan, isRaceSession, lapsToGo, raceLength, StrategyCaller, strategyContext, worstTyre, type FuelPlan, type StrategyInput } from "./strategy";
 
 export type EngineerSessionType = "practice" | "qualifying" | "race";
@@ -178,6 +179,9 @@ export class EngineerService {
   readonly fuel = new FuelTracker();
   private readonly strategy = new StrategyCaller();
   readonly gaps = new RaceGapCaller();
+  private readonly punctures = new PunctureDetector();
+  /** A tyre went down this lap; like a crash lap it says nothing about pace. */
+  private punctureThisLap = false;
   private readonly impacts = new ImpactDetector();
   private damageHistory: { at: number; reading: DamageReading }[] = [];
   private pendingCrash: { impact: Impact; before: DamageReading | null; settleAt: number } | null = null;
@@ -206,6 +210,7 @@ export class EngineerService {
         this.coDriverTick(packet);
         this.gapsTick(packet);
         this.crashTick(packet);
+        this.punctureTick(packet);
       },
       onNotification: (event) => {
         if (!this.settings.engineerEnabled) return;
@@ -262,6 +267,8 @@ export class EngineerService {
     this.fuel.reset();
     this.strategy.reset();
     this.gaps.reset();
+    this.punctures.reset();
+    this.punctureThisLap = false;
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
   }
 
@@ -390,8 +397,9 @@ export class EngineerService {
     // Out laps, in laps and idle laps (far slower than usual) say nothing about pace: keep them out of analysis and calls.
     const classification = (event.classification ?? null) as LapClassification | null;
     const normalTimes = this.sessionLaps.filter((lap) => lap.valid && !lap.excluded).map((lap) => lap.timeS);
-    const excluded = !isPaceLap(classification) ? `not a pace lap (${classification})` : this.crashThisLap ? "crash or heavy impact on this lap" : anomalyReason(lapTime, normalTimes);
+    const excluded = !isPaceLap(classification) ? `not a pace lap (${classification})` : this.crashThisLap ? "crash or heavy impact on this lap" : this.punctureThisLap ? "puncture on this lap" : anomalyReason(lapTime, normalTimes);
     this.crashThisLap = false;
+    this.punctureThisLap = false;
     this.lastLapExcluded = excluded !== null;
     const lapsCompleted = Number(event.lapNumber) || this.sessionLaps.length + 1;
     this.sessionLaps.push(lapRecordFromTally(lapsCompleted, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null, excluded));
@@ -565,6 +573,14 @@ export class EngineerService {
     // Damage without a pit call: the next clean lap decides if it's costing too much.
     const normalTimes = this.sessionLaps.filter((lap) => lap.valid && !lap.excluded).map((lap) => lap.timeS);
     if (call.priority < 2 && /damage/i.test(call.text) && normalTimes.length >= 2) this.crashPaceCheck = { usualLapS: median(normalTimes) };
+  }
+
+  /** One tyre losing pressure the others don't: a must-act call in any session and mode. */
+  punctureTick(packet: TelemetryPacket, nowMs = Date.now()): void {
+    const wheel = this.punctures.update(readPressures(packet), nowMs);
+    if (wheel === null) return;
+    this.punctureThisLap = true;
+    this.say(punctureCallout(wheel, this.rng));
   }
 
   coDriverTick(packet: TelemetryPacket, nowMs = Date.now()): void {
