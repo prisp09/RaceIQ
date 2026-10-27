@@ -9,6 +9,8 @@ export interface F1GridEntry {
   bestLapTime: number;
   gapToLeader: number;
   gapToCarAhead: number;
+  /** Game-reported time to the car one position ahead, seconds; 0 for the leader. */
+  deltaToCarInFront?: number;
   pitStatus: number;
   numPitStops: number;
   tyreCompound: string;

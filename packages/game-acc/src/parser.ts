@@ -334,6 +334,7 @@ export function parseAccBuffers(
     sessionType: SESSION_TYPE_NAMES[graphicsBuf.readInt32LE(GRAPHICS.session.offset)] ?? "unknown",
     sessionTimeLeftMs: graphicsBuf.readFloatLE(GRAPHICS.sessionTimeLeft.offset),
     sessionTotalLaps: graphicsBuf.readInt32LE(GRAPHICS.numberOfLaps.offset),
+    ...(graphicsBuf.length >= GRAPHICS.gapBehind.offset + 4 ? { gapAheadS: graphicsBuf.readInt32LE(GRAPHICS.gapAhead.offset) / 1000, gapBehindS: graphicsBuf.readInt32LE(GRAPHICS.gapBehind.offset) / 1000 } : {}),
     penalty,
     penaltyType: PENALTY_TYPE_NAMES[penalty] ?? "unknown",
     penaltyTime,

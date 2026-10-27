@@ -6,14 +6,14 @@
     "generator": {
       "name": "RaceIQ telemetry-catalog generator",
       "version": "0.20.0",
-      "sourceHash": "664b8e55cff26c2659ed9399e2bf7574df20c83136201d26f7d28823d62efa35"
+      "sourceHash": "91e14630c835abbdeb400d6d34cfab2efaf529cf3e72ea2252fbc2c2fb272cc4"
     },
     "sourceHashes": {
       "packages/capture-formats/src/lmu/opponent-snapshot.ts": "c18e10f39668501f9c4742bec8999bc7faeeba2c8ea7b42d60accfbbe4e8f0c6",
       "packages/game-ac-evo/src/parser.ts": "29cb3985fe32c797554d98f107a0c4d76ddcc5279d97e75423365e1a0887f5de",
-      "packages/game-acc/src/parser.ts": "fa85c585daf26fd1a129a77547b273b30d31bbce77e903e112d250c00c76ac45",
-      "packages/game-ams2/src/normalizer.ts": "1f3d334877533a4b748aa283cb95b7fb8762f3ea50f0ab2f8a44236eb438e031",
-      "packages/game-f1-2025/src/f1-state.ts": "3a8a7354ef04ac1515ecccdfe12d37e8a8e160c762fdac10920646039c661cce",
+      "packages/game-acc/src/parser.ts": "2175a1ea920a6cdc821720820c79ee41ad95cc65b201a5fe42eed6febbab9f69",
+      "packages/game-ams2/src/normalizer.ts": "3941af16126b489cc6e7a87b3cac6769399ebc1ad9f74fec543699bb2dea496f",
+      "packages/game-f1-2025/src/f1-state.ts": "77270316379904ce09402bbff562edd908b4819de6837aefe47a8691487ce26f",
       "packages/game-fm-2023/src/parser.ts": "71c348b894f84f6086c9582d0cce473bac75a3c85896010a0e5762854718b835",
       "packages/game-iracing-metadata/src/session-info/catalog.ts": "4d39b51587bf71a519991ff91a7781efd01190cd633c8e8ef3f4234fa6affb98",
       "packages/game-iracing/src/normalizer.ts": "bcc73bc4805a310f968b9743e6c9c88a688e3216cd28eecc3ee9f6c3d36b0afc",
@@ -22,7 +22,7 @@
       "server/session-capture/frame-time.ts": "55c44a6cede5e2c5fb1e1c45568fe44b4a9a8b156f260f69bb5d89f9c24935a2",
       "shared/racing/setups/schema.ts": "987941bb8f38520920686ef540e67ce2259fdc962de03ccb959f6b5ef773b28f"
     },
-    "contentHash": "b098bc792ae8c0d14db5051ce1be79f8161aec56c0ecad3001ebba3f10190e4f"
+    "contentHash": "e2319c628170c7ec9afa375d9439e0105f3e5fa0a1c39eaa1938b5390cd5b2b9"
   },
   "generatedFrom": [
     "packages/tooling-catalog/src/root.ts",
@@ -52768,7 +52768,8 @@
           "kind": "direct",
           "nativeUnit": "s",
           "sources": [
-            "f1.grid[].gapToCarAhead"
+            "f1.grid[].gapToCarAhead",
+            "f1.grid[].deltaToCarInFront"
           ],
           "freshness": "continuous",
           "description": "f1-2025 parser exposes 1 linked field.",
@@ -54668,8 +54669,8 @@
     },
     {
       "id": "timing.gap.place-ahead",
-      "label": "Time Gap Place Ahead",
-      "description": "LMU native time gap to place ahead.",
+      "label": "Gap Ahead S",
+      "description": "ACC native Graphics.gapAhead: time to the car one position ahead.",
       "parentId": "timing",
       "canonicalUnit": "s",
       "shape": "scalar",
@@ -54685,14 +54686,56 @@
           "description": "This parser does not expose an equivalent source value."
         },
         "acc": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "normalized",
+          "nativeUnit": "s",
+          "sources": [
+            "acc.gapAheadS"
+          ],
+          "freshness": "continuous",
+          "normalization": "milliseconds / 1000",
+          "description": "acc parser exposes 1 linked field.",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-acc/src/parser.ts"
+          },
+          "limitations": [],
+          "execution": {
+            "kind": "conversion",
+            "id": "acc:timing.gap.place-ahead:normalized",
+            "version": "0.20.0",
+            "deterministic": true,
+            "declaredInputs": [
+              "acc.gapAheadS"
+            ],
+            "missingDataPolicy": "require-all",
+            "codeHash": "67f2c96c8fe5a9b0c72cf97485f86534fde85af45e0b56e11a8293ddb9e871e5"
+          }
         },
         "ac-evo": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "normalized",
+          "nativeUnit": "s",
+          "sources": [
+            "acc.gapAheadS"
+          ],
+          "freshness": "continuous",
+          "normalization": "milliseconds / 1000",
+          "description": "ac-evo parser exposes 1 linked field.",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-ac-evo/src/parser.ts"
+          },
+          "limitations": [],
+          "execution": {
+            "kind": "conversion",
+            "id": "ac-evo:timing.gap.place-ahead:normalized",
+            "version": "0.20.0",
+            "deterministic": true,
+            "declaredInputs": [
+              "acc.gapAheadS"
+            ],
+            "missingDataPolicy": "require-all",
+            "codeHash": "c7695a15485a1a0dc18918912e18ce58c3076dd9681a7ee77bd537b4f098aab2"
+          }
         },
         "iracing": {
           "kind": "unavailable",
@@ -54714,9 +54757,18 @@
           "limitations": []
         },
         "ams2": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "direct",
+          "nativeUnit": "s",
+          "sources": [
+            "ams2.splitTimeAheadS"
+          ],
+          "freshness": "continuous",
+          "description": "Recorded AMS2 shared-memory value",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-ams2/src/normalizer.ts"
+          },
+          "limitations": []
         }
       },
       "valueType": "number",
@@ -54730,8 +54782,8 @@
     },
     {
       "id": "timing.gap.place-behind",
-      "label": "Time Gap Place Behind",
-      "description": "LMU native time gap to place behind.",
+      "label": "Gap Behind S",
+      "description": "ACC native Graphics.gapBehind: time to the car one position behind, reported negative.",
       "parentId": "timing",
       "canonicalUnit": "s",
       "shape": "scalar",
@@ -54747,14 +54799,56 @@
           "description": "This parser does not expose an equivalent source value."
         },
         "acc": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "normalized",
+          "nativeUnit": "s",
+          "sources": [
+            "acc.gapBehindS"
+          ],
+          "freshness": "continuous",
+          "normalization": "milliseconds / 1000",
+          "description": "acc parser exposes 1 linked field.",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-acc/src/parser.ts"
+          },
+          "limitations": [],
+          "execution": {
+            "kind": "conversion",
+            "id": "acc:timing.gap.place-behind:normalized",
+            "version": "0.20.0",
+            "deterministic": true,
+            "declaredInputs": [
+              "acc.gapBehindS"
+            ],
+            "missingDataPolicy": "require-all",
+            "codeHash": "de7002b95aa434a5b57aed1cfcbc09122c420568d3d967e2dabc41516adb019d"
+          }
         },
         "ac-evo": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "normalized",
+          "nativeUnit": "s",
+          "sources": [
+            "acc.gapBehindS"
+          ],
+          "freshness": "continuous",
+          "normalization": "milliseconds / 1000",
+          "description": "ac-evo parser exposes 1 linked field.",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-ac-evo/src/parser.ts"
+          },
+          "limitations": [],
+          "execution": {
+            "kind": "conversion",
+            "id": "ac-evo:timing.gap.place-behind:normalized",
+            "version": "0.20.0",
+            "deterministic": true,
+            "declaredInputs": [
+              "acc.gapBehindS"
+            ],
+            "missingDataPolicy": "require-all",
+            "codeHash": "e5cc5ecb8b0505f151d91446361a4ca6b40efa8c7ba5182376a8770cf7d430a8"
+          }
         },
         "iracing": {
           "kind": "unavailable",
@@ -54776,9 +54870,18 @@
           "limitations": []
         },
         "ams2": {
-          "kind": "unavailable",
-          "reason": "source-not-provided",
-          "description": "This parser does not expose an equivalent source value."
+          "kind": "direct",
+          "nativeUnit": "s",
+          "sources": [
+            "ams2.splitTimeBehindS"
+          ],
+          "freshness": "continuous",
+          "description": "Recorded AMS2 shared-memory value",
+          "provenance": {
+            "origin": "parser",
+            "artifact": "packages/game-ams2/src/normalizer.ts"
+          },
+          "limitations": []
         }
       },
       "valueType": "number",
@@ -73952,6 +74055,18 @@
         "retention": "exact"
       },
       {
+        "path": "f1.grid[].deltaToCarInFront",
+        "label": "Delta To Car In Front",
+        "unit": "s",
+        "dataType": "number",
+        "count": 1,
+        "description": "F1 native LapData deltaToCarInFront (minutes and ms parts combined), 0 for the leader.",
+        "semanticId": "timing.competitor.gap-to-ahead",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
         "path": "f1.grid[].driverId",
         "label": "Driver Id",
         "unit": "id",
@@ -77542,6 +77657,30 @@
         "retention": "exact"
       },
       {
+        "path": "acc.gapAheadS",
+        "label": "Gap Ahead S",
+        "unit": "s",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC native Graphics.gapAhead: time to the car one position ahead.",
+        "semanticId": "timing.gap.place-ahead",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "acc.gapBehindS",
+        "label": "Gap Behind S",
+        "unit": "s",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC native Graphics.gapBehind: time to the car one position behind, reported negative.",
+        "semanticId": "timing.gap.place-behind",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
         "path": "acc.isValidLap",
         "label": "Is Valid Lap",
         "unit": "boolean",
@@ -80659,6 +80798,30 @@
         "count": 1,
         "description": "Fuel Per Lap source value reported by ac-evo in L.",
         "semanticId": "fuel.fuel-per-lap",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "acc.gapAheadS",
+        "label": "Gap Ahead S",
+        "unit": "s",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC native Graphics.gapAhead: time to the car one position ahead.",
+        "semanticId": "timing.gap.place-ahead",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "acc.gapBehindS",
+        "label": "Gap Behind S",
+        "unit": "s",
+        "dataType": "number",
+        "count": 1,
+        "description": "ACC native Graphics.gapBehind: time to the car one position behind, reported negative.",
+        "semanticId": "timing.gap.place-behind",
         "sourceKind": "extension",
         "recordedByRaceIQ": true,
         "retention": "exact"
@@ -96683,6 +96846,28 @@
         "retention": "exact"
       },
       {
+        "path": "ams2.splitTimeAheadS",
+        "label": "ams2.splitTimeAheadS",
+        "semanticId": "timing.gap.place-ahead",
+        "unit": "s",
+        "dataType": "number",
+        "description": "AMS2 recorded shared-memory extension",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
+        "path": "ams2.splitTimeBehindS",
+        "label": "ams2.splitTimeBehindS",
+        "semanticId": "timing.gap.place-behind",
+        "unit": "s",
+        "dataType": "number",
+        "description": "AMS2 recorded shared-memory extension",
+        "sourceKind": "extension",
+        "recordedByRaceIQ": true,
+        "retention": "exact"
+      },
+      {
         "path": "ams2.trackLengthM",
         "label": "ams2.trackLengthM",
         "semanticId": "timing.track-length",
@@ -96721,31 +96906,31 @@
         "recorded": 96
       },
       "f1-2025": {
-        "total": 292,
+        "total": 293,
         "packet": 119,
-        "extension": 173,
+        "extension": 174,
         "sdk": 0,
         "yaml": 0,
         "setup": 0,
-        "recorded": 292
+        "recorded": 293
       },
       "acc": {
-        "total": 207,
+        "total": 209,
         "packet": 124,
-        "extension": 50,
+        "extension": 52,
         "sdk": 0,
         "yaml": 0,
         "setup": 33,
-        "recorded": 174
+        "recorded": 176
       },
       "ac-evo": {
-        "total": 260,
+        "total": 262,
         "packet": 126,
-        "extension": 102,
+        "extension": 104,
         "sdk": 0,
         "yaml": 0,
         "setup": 32,
-        "recorded": 228
+        "recorded": 230
       },
       "iracing": {
         "total": 952,
@@ -96766,13 +96951,13 @@
         "recorded": 250
       },
       "ams2": {
-        "total": 114,
+        "total": 116,
         "packet": 108,
-        "extension": 6,
+        "extension": 8,
         "sdk": 0,
         "yaml": 0,
         "setup": 0,
-        "recorded": 114
+        "recorded": 116
       }
     }
   }

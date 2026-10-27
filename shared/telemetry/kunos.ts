@@ -74,6 +74,9 @@ export interface KunosExtendedData {
   sessionTimeLeftMs?: number;
   /** ACC Graphics.numberOfLaps: laps in a lap-limited session, 0 when time-limited. */
   sessionTotalLaps?: number;
+  /** ACC Graphics.gapAhead / gapBehind in seconds (gapBehind is negative); absent from 1320-byte legacy recordings. */
+  gapAheadS?: number;
+  gapBehindS?: number;
   /** ACC native penalty enum code; absent for sources without this field. */
   penalty?: number;
   /** Stable kebab-case ACC penalty label, or "unknown" for unmapped codes. */

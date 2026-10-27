@@ -7,20 +7,20 @@
 - Catalog version: `0.20.0`
 - Schema version: `v7`
 - Generator: `RaceIQ telemetry-catalog generator@0.20.0`
-- Generator source SHA-256: `664b8e55cff26c2659ed9399e2bf7574df20c83136201d26f7d28823d62efa35`
-- Content SHA-256: `b098bc792ae8c0d14db5051ce1be79f8161aec56c0ecad3001ebba3f10190e4f`
+- Generator source SHA-256: `91e14630c835abbdeb400d6d34cfab2efaf529cf3e72ea2252fbc2c2fb272cc4`
+- Content SHA-256: `e2319c628170c7ec9afa375d9439e0105f3e5fa0a1c39eaa1938b5390cd5b2b9`
 
 ## Coverage
 
 | Simulator | Sources | Recorded | Packet | Extension | SDK | YAML | Setup |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | fm-2023 | 96 | 96 | 95 | 1 | 0 | 0 | 0 |
-| f1-2025 | 292 | 292 | 119 | 173 | 0 | 0 | 0 |
-| acc | 207 | 174 | 124 | 50 | 0 | 0 | 33 |
-| ac-evo | 260 | 228 | 126 | 102 | 0 | 0 | 32 |
+| f1-2025 | 293 | 293 | 119 | 174 | 0 | 0 | 0 |
+| acc | 209 | 176 | 124 | 52 | 0 | 0 | 33 |
+| ac-evo | 262 | 230 | 126 | 104 | 0 | 0 | 32 |
 | iracing | 952 | 702 | 115 | 18 | 324 | 495 | 0 |
 | lmu | 250 | 250 | 126 | 124 | 0 | 0 | 0 |
-| ams2 | 114 | 114 | 108 | 6 | 0 | 0 | 0 |
+| ams2 | 116 | 116 | 108 | 8 | 0 | 0 | 0 |
 
 ## Semantic variables
 
@@ -698,8 +698,8 @@
 | `timing.gap-behind-ms` | Gap Behind Ms | number | time | s | scalar |  |  |  |
 | `timing.gap.car-ahead` | Time Gap Car Ahead | number | time | s | scalar |  |  |  |
 | `timing.gap.car-behind` | Time Gap Car Behind | number | time | s | scalar |  |  |  |
-| `timing.gap.place-ahead` | Time Gap Place Ahead | number | time | s | scalar |  |  |  |
-| `timing.gap.place-behind` | Time Gap Place Behind | number | time | s | scalar |  |  |  |
+| `timing.gap.place-ahead` | Gap Ahead S | number | time | s | scalar |  |  |  |
+| `timing.gap.place-behind` | Gap Behind S | number | time | s | scalar |  |  |  |
 | `timing.grid-position` | Grid Position | number | dimensionless | count | scalar |  |  |  |
 | `timing.ideal-lap-time` | Ideal lap time | string | time | s | scalar |  |  |  |
 | `timing.lap-delta-to-best-lap` | Lap Delta To Best Lap | number | time | s | scalar |  |  |  |

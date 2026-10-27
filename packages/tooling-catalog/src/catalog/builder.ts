@@ -641,6 +641,8 @@ export async function buildTelemetryCatalog(): Promise<BuiltTelemetryCatalog> {
     ["session.session-type", "ams2.sessionType", "text"],
     ["timing.total-laps", "ams2.lapsInEvent", "count"],
     ["timing.session-time-remain", "ams2.eventTimeRemainingS", "s"],
+    ["timing.gap.place-ahead", "ams2.splitTimeAheadS", "s"],
+    ["timing.gap.place-behind", "ams2.splitTimeBehindS", "s"],
   ] as const) {
     const variable = variables.get(semantic);
     if (variable) {
