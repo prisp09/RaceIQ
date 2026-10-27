@@ -3046,5 +3046,6 @@
   "engineer_maximize": "Maximize",
   "engineer_close_window": "Close window",
   "engineer_popped_out": "Engineer radio is in its own window.",
-  "engineer_bring_back": "Bring back"
+  "engineer_bring_back": "Bring back",
+  "engineer_jump_latest": "Jump to latest"
 }

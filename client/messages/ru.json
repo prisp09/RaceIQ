@@ -3042,5 +3042,6 @@
   "engineer_maximize": "Развернуть",
   "engineer_close_window": "Закрыть окно",
   "engineer_popped_out": "Радио открыто в отдельном окне.",
-  "engineer_bring_back": "Вернуть"
+  "engineer_bring_back": "Вернуть",
+  "engineer_jump_latest": "К последним"
 }

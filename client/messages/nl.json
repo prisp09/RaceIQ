@@ -3042,5 +3042,6 @@
   "engineer_maximize": "Maximaliseren",
   "engineer_close_window": "Venster sluiten",
   "engineer_popped_out": "De radio staat in een eigen venster.",
-  "engineer_bring_back": "Terughalen"
+  "engineer_bring_back": "Terughalen",
+  "engineer_jump_latest": "Naar nieuwste"
 }

@@ -3042,5 +3042,6 @@
   "engineer_maximize": "Maksymalizuj",
   "engineer_close_window": "Zamknij okno",
   "engineer_popped_out": "Radio jest w osobnym oknie.",
-  "engineer_bring_back": "Przywróć"
+  "engineer_bring_back": "Przywróć",
+  "engineer_jump_latest": "Przejdź do najnowszych"
 }

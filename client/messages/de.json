@@ -3046,5 +3046,6 @@
   "engineer_maximize": "Maximieren",
   "engineer_close_window": "Fenster schließen",
   "engineer_popped_out": "Der Funk läuft in einem eigenen Fenster.",
-  "engineer_bring_back": "Zurückholen"
+  "engineer_bring_back": "Zurückholen",
+  "engineer_jump_latest": "Zur neuesten"
 }

@@ -3042,5 +3042,6 @@
   "engineer_maximize": "Ingrandisci",
   "engineer_close_window": "Chiudi finestra",
   "engineer_popped_out": "La radio è in una finestra separata.",
-  "engineer_bring_back": "Riporta qui"
+  "engineer_bring_back": "Riporta qui",
+  "engineer_jump_latest": "Vai all'ultimo"
 }

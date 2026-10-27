@@ -3042,5 +3042,6 @@
   "engineer_maximize": "Maximizar",
   "engineer_close_window": "Fechar janela",
   "engineer_popped_out": "O rádio está em uma janela própria.",
-  "engineer_bring_back": "Trazer de volta"
+  "engineer_bring_back": "Trazer de volta",
+  "engineer_jump_latest": "Ir para o mais recente"
 }

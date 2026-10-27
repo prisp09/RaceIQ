@@ -3043,5 +3043,6 @@
   "engineer_maximize": "최대화",
   "engineer_close_window": "창 닫기",
   "engineer_popped_out": "무전이 별도 창에서 열려 있습니다.",
-  "engineer_bring_back": "되돌리기"
+  "engineer_bring_back": "되돌리기",
+  "engineer_jump_latest": "최신으로 이동"
 }
