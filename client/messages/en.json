@@ -3063,5 +3063,8 @@
   "engineer_usage_detail": "Input {input}, cache read {cacheRead}, cache write {cacheWrite}, output {output}. Cost is an estimate from list prices; models without a known price count tokens only.",
   "engineer_repeat_label": "Repeat last message button",
   "engineer_repeat_help": "Press it while driving to hear the last radio message again. Works while the game has focus, like push to talk.",
-  "engineer_repeat_last": "Repeat last message"
+  "engineer_repeat_last": "Repeat last message",
+  "engineer_debrief_title": "Race engineer debrief",
+  "engineer_debrief_calls": "Key radio calls ({count})",
+  "engineer_debrief_position": "Finished P{position}"
 }

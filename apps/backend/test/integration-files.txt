@@ -49,6 +49,7 @@ apps/backend/test/driver-profile/runs.test.ts
 apps/backend/test/driver-profile/style.test.ts
 apps/backend/test/driver-profile/trend-provenance.test.ts
 apps/backend/test/engineer/azure-tts.test.ts
+apps/backend/test/engineer/debrief.test.ts
 apps/backend/test/engineer/dossier.test.ts
 apps/backend/test/engineer/provider-compat.test.ts
 apps/backend/test/engineer/service-directives.test.ts

@@ -2205,6 +2205,20 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
        WHERE session_id IN (SELECT id FROM sessions WHERE ownership='mine')`,
     ],
   },
+  {
+    version: 83,
+    name: "store race engineer session debriefs",
+    sql: [
+      `CREATE TABLE engineer_debriefs (
+        session_id INTEGER PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+        debrief TEXT NOT NULL,
+        session_type TEXT,
+        final_position INTEGER,
+        calls TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      )`,
+    ],
+  },
 ];
 const dashboardCanonicalTriggers = (() => {
   const readModel = migrations.find((migration) => migration.version === 68);

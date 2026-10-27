@@ -3060,5 +3060,8 @@
   "engineer_usage_detail": "입력 {input}, 캐시 읽기 {cacheRead}, 캐시 쓰기 {cacheWrite}, 출력 {output}. 비용은 정가 기준 추정치이며, 가격을 모르는 모델은 토큰만 표시합니다.",
   "engineer_repeat_label": "마지막 메시지 반복 버튼",
   "engineer_repeat_help": "주행 중에 누르면 마지막 무전 메시지를 다시 들을 수 있습니다. 푸시 투 토크처럼 게임이 포커스 상태여도 작동합니다.",
-  "engineer_repeat_last": "마지막 메시지 반복"
+  "engineer_repeat_last": "마지막 메시지 반복",
+  "engineer_debrief_title": "레이스 엔지니어 디브리핑",
+  "engineer_debrief_calls": "주요 무전 ({count})",
+  "engineer_debrief_position": "P{position}로 완주"
 }

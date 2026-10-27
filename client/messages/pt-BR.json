@@ -3059,5 +3059,8 @@
   "engineer_usage_detail": "Entrada {input}, leitura de cache {cacheRead}, gravação de cache {cacheWrite}, saída {output}. O custo é uma estimativa pelos preços de tabela; modelos sem preço conhecido contam só tokens.",
   "engineer_repeat_label": "Botão repetir última mensagem",
   "engineer_repeat_help": "Aperte enquanto pilota para ouvir de novo a última mensagem do rádio. Funciona com o jogo em foco, como o apertar para falar.",
-  "engineer_repeat_last": "Repetir última mensagem"
+  "engineer_repeat_last": "Repetir última mensagem",
+  "engineer_debrief_title": "Resumo do engenheiro de corrida",
+  "engineer_debrief_calls": "Principais mensagens de rádio ({count})",
+  "engineer_debrief_position": "Terminou em P{position}"
 }

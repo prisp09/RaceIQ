@@ -64,7 +64,7 @@ export function SessionReviewDashboard({
     m, Button, SearchSelect, TireGrid, SectorDetailView, SectorMap, TrackFocusView, IssuePill,
     bandColor, buildSectorRanges, CORNERS, CornerBars, sectorIndexForTelemetryIndex, METRICS,
     metricDisplayValue, tuneMetricValue, tuneMetricsFor, useTirePressureOptimal, useUnits,
-    useAlignedTelemetry, useLapIssues, formatLapTime,
+    useAlignedTelemetry, useLapIssues, formatLapTime, EngineerDebrief,
   } = useSessionAnalyseHost();
   const validLaps = useMemo(() => [...laps].filter((l) => l.isValid && isPaceLap(l.classification) && Number.isFinite(l.lapTime) && l.lapTime > 0 && !l.experimentExcluded).sort((a, b) => b.lapNumber - a.lapNumber), [laps]);
   const evaluationLaps = useMemo(() => selectEvaluationLaps(laps).chosen, [laps]);
@@ -471,6 +471,7 @@ export function SessionReviewDashboard({
                 )}
               </div>
             </div>
+            {EngineerDebrief && sessionId != null && <EngineerDebrief sessionId={sessionId} />}
           </>
         )}
       </div>
