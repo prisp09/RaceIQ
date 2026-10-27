@@ -174,3 +174,77 @@ describe("race engineer crash calls", () => {
     }
   });
 });
+
+describe("co-driver tip feedback", () => {
+  const trackLength = 5000;
+  const pit = { trackLength } as never;
+  const segments = [{ type: "corner", name: "T1", number: 1, startFrac: 0.4, endFrac: 0.45 }];
+  /** Drives one lap; `groupTimeS` is the time spent between 40% and 45% of the lap. */
+  const driveLap = (service: EngineerService, lapNumber: number, groupTimeS: number, startMs: number, steps = 100) => {
+    let lapTime = 0;
+    let nowMs = startMs;
+    for (let step = 0; step <= steps; step++) {
+      const frac = step / 100;
+      const inGroup = frac > 0.4 && frac <= 0.45;
+      lapTime += inGroup ? groupTimeS / 5 : 1;
+      nowMs += 200;
+      const packet = { gameId: "acc", trackId: 1, IsRaceOn: 1, LapNumber: lapNumber, CurrentLap: lapTime, DistanceTraveled: (lapNumber + frac) * trackLength, Speed: 50, Brake: frac > 0.37 && frac < 0.4 ? 255 : 0 } as unknown as TelemetryPacket;
+      service.state.update(packet, null, pit);
+      service.coDriverTick(packet, nowMs);
+    }
+    return nowMs;
+  };
+
+  test("confirms a gain from a played tip and tells the next tip prompt", async () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "co-driver" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const prompts: string[] = [];
+    const service = new EngineerService(async (_system, prompt) => { prompts.push(prompt); return '[{"group":"G1","tip":"Brake ten metres later."}]'; }, () => 0);
+    try {
+      service.state.update({ gameId: "acc", trackId: 1, IsRaceOn: 1, LapNumber: 0, DistanceTraveled: 0 } as unknown as TelemetryPacket, null, pit);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      (service.state as unknown as { segments: unknown }).segments = segments;
+      let nowMs = driveLap(service, 1, 6.5, 0);
+      nowMs = driveLap(service, 2, 6.2, nowMs, 0); // first packet of lap 2 closes lap 1
+      await service.refreshCornerTips({ lapTime: 100, isValid: true, previousBest: 0 });
+      expect(service.tips.size).toBe(1);
+      said.length = 0;
+      nowMs = driveLap(service, 2, 6.2, nowMs + 100_000); // the tip plays, then the group is 0.3 s quicker
+      driveLap(service, 3, 6.2, nowMs, 0);
+      expect(said).toEqual(["Turn 1: Brake ten metres later."]);
+      await service.refreshCornerTips({ lapTime: 99.7, isValid: true, previousBest: 100 });
+      expect(said.at(-1)).toBe("Good, three tenths better through Turn 1. Best yet through there.");
+      expect(prompts.at(-1)).toContain('Earlier tips (JSON): [{"group":"G1","corner":"Turn 1","tip":"Brake ten metres later.","result":"gained 0.30s"}]');
+    } finally {
+      wsManager.broadcastNotification = original;
+      saveSettings({ ...loadSettings(), engineerMode: "normal" });
+    }
+  });
+
+  test("drops a repeated tip that gained nothing, and says nothing about it", async () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "co-driver" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(async () => '[{"group":"G1","tip":"Brake ten metres later."}]', () => 0);
+    try {
+      service.state.update({ gameId: "acc", trackId: 1, IsRaceOn: 1, LapNumber: 0, DistanceTraveled: 0 } as unknown as TelemetryPacket, null, pit);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      (service.state as unknown as { segments: unknown }).segments = segments;
+      let nowMs = driveLap(service, 1, 6.5, 0);
+      nowMs = driveLap(service, 2, 6.6, nowMs, 0);
+      await service.refreshCornerTips({ lapTime: 100, isValid: true, previousBest: 0 });
+      said.length = 0;
+      nowMs = driveLap(service, 2, 6.6, nowMs + 100_000); // tip plays, group gets slower
+      driveLap(service, 3, 6.6, nowMs, 0);
+      await service.refreshCornerTips({ lapTime: 100.1, isValid: true, previousBest: 100 });
+      expect(said).toEqual(["Turn 1: Brake ten metres later."]);
+      expect(service.tips.size).toBe(0);
+    } finally {
+      wsManager.broadcastNotification = original;
+      saveSettings({ ...loadSettings(), engineerMode: "normal" });
+    }
+  });
+});

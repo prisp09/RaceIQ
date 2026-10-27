@@ -30,7 +30,7 @@ import { anomalyReason, lapRecordFromTally, median, summarizeSession, type Sessi
 import { assessCrash, crashPaceCallout, ImpactDetector, readDamage, type DamageReading, type Impact } from "./crash";
 import { isPaceLap } from "@raceiq/shared/racing/lap-classification";
 import type { LapClassification } from "@raceiq/shared/racing/lap-classification";
-import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
+import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TIP_FEEDBACK_EVERY_LAPS, tipFeedbackCallout, TipHistory, tipOutcomes, TipScheduler, type CachedTip, type CornerGroup, type CornerGroupStats } from "./co-driver";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 
 export type EngineerSessionType = "practice" | "qualifying" | "race";
@@ -91,6 +91,7 @@ Rules:
 - Each tip is 6 to 12 words, radio style, one concrete change: braking point, entry speed, line, kerbs or throttle. Example: "Brake ten metres later, use the kerb on exit."
 - Do not repeat the corner name; it is added for you.
 - Only include groups with real time to gain (slower than the best lap through that group, or a mistake there). Skip the rest. At most 5 tips.
+- "Earlier tips" lists tips already given and what they did to the time through that group. Build on tips that gained time. If a tip gained nothing or lost time, don't repeat it: suggest a different change or skip that group.
 - Use only the data given. If no group has time to gain, reply [].`;
 
 /** Tip generation runs in the background while the next lap starts. */
@@ -164,6 +165,13 @@ export class EngineerService {
   private dossier = "";
   private dossierKey = "";
   bestLapCornerStats: CornerGroupStats[] = [];
+  /** Tips spoken on the lap in progress and on the last finished lap, to judge whether they helped. */
+  private tipsPlayedThisLap: CachedTip[] = [];
+  private tipsPlayedLastLap: CachedTip[] = [];
+  readonly tipHistory = new TipHistory();
+  /** Fastest time through each corner group this session, from clean laps. */
+  private groupBestS = new Map<string, number>();
+  private lapsSinceTipFeedback = TIP_FEEDBACK_EVERY_LAPS;
   private readonly impacts = new ImpactDetector();
   private damageHistory: { at: number; reading: DamageReading }[] = [];
   private pendingCrash: { impact: Impact; before: DamageReading | null; settleAt: number } | null = null;
@@ -234,6 +242,7 @@ export class EngineerService {
     this.coLapNumber = -1;
     this.tips.setTips([]);
     this.lastLapCornerStats = [];
+    this.resetTipFeedback();
     this.impacts.reset();
     this.damageHistory = [];
     this.pendingCrash = null;
@@ -485,10 +494,15 @@ export class EngineerService {
       this.tips.setTips([]);
       this.lastLapCornerStats = [];
       this.bestLapCornerStats = [];
+      this.resetTipFeedback();
     }
     if (this.coGroups.length === 0) return;
     if (packet.LapNumber !== this.coLapNumber || !this.coRecorder) {
-      if (this.coRecorder && packet.LapNumber !== this.coLapNumber) this.lastLapCornerStats = this.coRecorder.finish();
+      if (this.coRecorder && packet.LapNumber !== this.coLapNumber) {
+        this.lastLapCornerStats = this.coRecorder.finish();
+        this.tipsPlayedLastLap = this.tipsPlayedThisLap;
+        this.tipsPlayedThisLap = [];
+      }
       this.coRecorder = new CornerLapRecorder(this.coGroups, trackLength);
       this.coLapNumber = packet.LapNumber;
       this.tips.newLap();
@@ -501,13 +515,46 @@ export class EngineerService {
     // Corner timing is recorded in every mode (questions use it); tips only play in Co-driver.
     if (this.mode !== "co-driver") return;
     const tip = this.tips.update(frac, packet.Speed, trackLength, nowMs);
-    if (tip) this.say({ key: `tip-${tip.groupId}`, priority: 0, text: tip.text });
+    if (tip) {
+      this.tipsPlayedThisLap.push(tip);
+      this.say({ key: `tip-${tip.groupId}`, priority: 0, text: tip.text });
+    }
+  }
+
+  private resetTipFeedback(): void {
+    this.tipsPlayedThisLap = [];
+    this.tipsPlayedLastLap = [];
+    this.tipHistory.clear();
+    this.groupBestS.clear();
+    this.lapsSinceTipFeedback = TIP_FEEDBACK_EVERY_LAPS;
+  }
+
+  /** Judges the tips played on the lap just finished; now and then confirms the biggest gain on the radio. */
+  private tipFeedback(lap: { isValid: boolean }): void {
+    const outcomes = tipOutcomes(this.tipsPlayedLastLap, this.lastLapCornerStats, this.groupBestS);
+    this.tipsPlayedLastLap = [];
+    this.tipHistory.record(outcomes);
+    this.lapsSinceTipFeedback++;
+    if (this.mode === "co-driver" && this.lapsSinceTipFeedback >= TIP_FEEDBACK_EVERY_LAPS) {
+      const text = tipFeedbackCallout(outcomes, this.rng);
+      if (text) {
+        this.lapsSinceTipFeedback = 0;
+        this.say({ key: "tip-feedback", priority: 0, text });
+      }
+    }
+    // A cut through a group on an invalid lap isn't a time to beat.
+    if (!lap.isValid) return;
+    for (const entry of this.lastLapCornerStats) {
+      const best = this.groupBestS.get(entry.id);
+      if (entry.timeS > 0 && (best === undefined || entry.timeS < best)) this.groupBestS.set(entry.id, entry.timeS);
+    }
   }
 
   /** One AI call per lap: a short tip per corner group with time to gain. Keeps the last good tips on failure. */
   async refreshCornerTips(lap: { lapTime: number; isValid: boolean; previousBest: number }): Promise<void> {
     const last = this.lastLapCornerStats;
     if (last.length === 0) return;
+    this.tipFeedback(lap);
     const best = new Map(this.bestLapCornerStats.map((entry) => [entry.id, entry]));
     const labels = new Map(this.coGroups.map((group) => [group.id, group.label]));
     const groups = last.map(({ brakeFrac: _b, ...entry }) => {
@@ -523,15 +570,23 @@ export class EngineerService {
     let raw = "";
     try {
       raw = await Promise.race([
-        this.generate(CO_DRIVER_PROMPT + this.sessionLine(), `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`, await this.driverDossier()),
+        this.generate(CO_DRIVER_PROMPT + this.sessionLine(), this.tipPrompt(lap, groups), await this.driverDossier()),
         new Promise<string>((resolve) => setTimeout(() => resolve(""), CO_DRIVER_TIMEOUT_MS)),
       ]);
     } catch {
       raw = "";
     }
-    const tips = parseTips(raw, this.coGroups, last);
+    const tips = parseTips(raw, this.coGroups, last).filter((tip) => !this.tipHistory.failedBefore(tip));
     if (tips.length > 0 || raw.trim().startsWith("[")) this.tips.setTips(tips);
     if (isBest || this.bestLapCornerStats.length === 0) this.bestLapCornerStats = last;
+  }
+
+  private tipPrompt(lap: { lapTime: number; previousBest: number }, groups: unknown[]): string {
+    const earlier = this.tipHistory.forPrompt();
+    return [
+      `Last lap corner groups (JSON): ${JSON.stringify({ lapTimeS: Number(lap.lapTime.toFixed(3)), bestLapS: lap.previousBest > 0 ? Number(lap.previousBest.toFixed(3)) : null, groups })}`,
+      earlier.length > 0 ? `Earlier tips (JSON): ${JSON.stringify(earlier)}` : "",
+    ].filter(Boolean).join("\n\n");
   }
 
   /** Coach mode: a Claude-written lap debrief. Says nothing if Claude fails or is too slow. */
