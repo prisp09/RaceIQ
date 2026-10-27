@@ -25,9 +25,13 @@ import { encodeFrameLength } from "@raceiq/capture-formats/session/framing";
 const MIN_PACKET_LENGTH = 29; // Minimum: F1 header size
 const PACKETS_PER_SEC_WINDOW = 1000;
 
+/** The only F1 UDP format the parser reads (the 2025 setting in F1 25). */
+const F1_SUPPORTED_FORMAT = 2025;
+
 class UdpListener {
   private _droppedPackets = 0;
   private _lastProcessErrorLogAt = 0;
+  private _lastFormatWarningAt = 0;
   private _totalPackets = 0;
   private _receiving = false;
   private _packetsInWindow = 0;
@@ -197,6 +201,19 @@ class UdpListener {
     console.log(`[UDP] Listening on ${hostname}:${port}`);
   }
 
+  /**
+   * F1 packets in another year's format are dropped by the parser without a word, which looks
+   * like "no telemetry". Spot their header (packetFormat, packet id) and tell the UI.
+   */
+  private warnUnsupportedF1Format(sourceFrame: Buffer, now: number): void {
+    if (sourceFrame.length < 29 || now - this._lastFormatWarningAt < 30_000) return;
+    const format = sourceFrame.readUInt16LE(0);
+    if (format < 2019 || format > 2035 || format === F1_SUPPORTED_FORMAT || sourceFrame[6]! > 15) return;
+    this._lastFormatWarningAt = now;
+    console.warn(`[UDP] Ignoring F1 packets in UDP format ${format}; RaceIQ reads format ${F1_SUPPORTED_FORMAT}`);
+    wsManager.broadcastNotification({ type: "telemetry-warning", code: "f1-udp-format", format, supported: F1_SUPPORTED_FORMAT });
+  }
+
   private async handlePacket(sourceFrame: Buffer): Promise<void> {
     const frameTimeMs = Date.now();
     this._totalPackets++;
@@ -221,7 +238,10 @@ class UdpListener {
 
     // Returns null when another game is paused/in menus.
     const packet = parsePacket(sourceFrame, frameTimeMs);
-    if (!packet) return;
+    if (!packet) {
+      this.warnUnsupportedF1Format(sourceFrame, frameTimeMs);
+      return;
+    }
 
     this._receiving = true;
     if (packet.gameId === "fm-2023") this._forzaRaceActive = true;

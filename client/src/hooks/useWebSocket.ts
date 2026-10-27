@@ -254,6 +254,8 @@ export function useWebSocket() {
             queryClient.invalidateQueries({ queryKey: queryKeys.userTunes });
             invalidateDashboard();
             telemetryStore.actions.incrementReprocessProgress();
+          } else if (data.type === "telemetry-warning") {
+            window.dispatchEvent(new CustomEvent("raceiq-telemetry-warning", { detail: data }));
           } else if (typeof data.type === "string" && data.type.startsWith("engineer-")) {
             window.dispatchEvent(new CustomEvent("raceiq-engineer", { detail: data }));
           } else if (data.type === "experiment-updated") {

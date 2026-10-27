@@ -32,6 +32,7 @@ import { LapReplayHostProvider } from "../features/lap-replay-host";
 import { SessionsPageHostProvider } from "../features/sessions-page-host";
 import { SessionAnalyseHostProvider } from "../features/session-analyse-host";
 import { EngineerDrawer } from "../components/engineer/EngineerDrawer";
+import { TelemetryWarningBanner } from "../components/TelemetryWarningBanner";
 function OverlayShell() {
   useWebSocket();
   const { displaySettings, settingsLoaded } = useSettings();
@@ -173,6 +174,7 @@ function AppShell() {
               <Outlet key={uiLocale} />
             </ResponsiveWorkspace>
             {displaySettings.engineerEnabled && <EngineerDrawer />}
+            <TelemetryWarningBanner />
           </main>
         </div>
 
