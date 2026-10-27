@@ -104,6 +104,15 @@ export const COACH_TIMEOUT_MS = 4000;
 /** `stablePrefix` (the driver dossier) is identical for every call in a session, so it can be cached. */
 export type EngineerGenerate = (system: string, prompt: string, stablePrefix?: string) => Promise<string>;
 
+/** Local reasoning models can inline <think> blocks; drop them so they are never spoken. */
+export function stripReasoning(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/^[\s\S]*<\/think>/i, "")
+    .replace(/<think>[\s\S]*$/i, "")
+    .trim();
+}
+
 const defaultGenerate: EngineerGenerate = async (system, prompt, stablePrefix = "") => {
   // Same provider/model resolution as the liveEngineer AI feature (falls back to AI Chat).
   const settings = loadSettings({ syncLaunchOnLogin: false });
@@ -121,7 +130,7 @@ const defaultGenerate: EngineerGenerate = async (system, prompt, stablePrefix = 
   }
   const ai = await resolveAi("liveEngineer");
   const result = await ai.generateText({ system: stablePrefix ? `${stablePrefix}\n\n${system}` : system, prompt, temperature: 0.4, maxOutputTokens: ENGINEER_MAX_OUTPUT_TOKENS });
-  return String(result.analysis ?? "");
+  return stripReasoning(String(result.analysis ?? ""));
 };
 
 export class EngineerService {

@@ -351,6 +351,11 @@ export type OpenAiRequestOptions = {
 };
 
 /** Run a request against OpenAI or an OpenAI-compatible endpoint. */
+/** OpenAI reasoning models (gpt-5*, o-series) reject temperature and max_tokens. */
+function isOpenAiReasoningModel(model: string): boolean {
+  return /^(gpt-5|o\d)/i.test(model);
+}
+
 export async function runOpenAiCompatible(options: OpenAiRequestOptions): Promise<AiResult> {
   const model = options.model || "gpt-4o-mini";
   const endpoint = (options.endpoint || "https://api.openai.com/v1").replace(/\/+$/, "");
@@ -364,11 +369,15 @@ export async function runOpenAiCompatible(options: OpenAiRequestOptions): Promis
       model,
       messages: [{ role: "user", content: options.prompt }],
     };
-    // Current Claude models reject `temperature` on the compatibility API.
-    if (!isAnthropicEndpoint(endpoint)) body.temperature = options.temperature ?? 0.3;
+    const officialOpenAi = endpoint === "https://api.openai.com/v1";
+    const openAiReasoning = officialOpenAi && isOpenAiReasoningModel(model);
+    // Current Claude models and OpenAI reasoning models reject `temperature`.
+    if (!isAnthropicEndpoint(endpoint) && !openAiReasoning) body.temperature = options.temperature ?? 0.3;
     // Anthropic's compatibility layer maps reasoning_effort to extended thinking, so leave it unset there.
-    if (endpoint !== "https://api.openai.com/v1" && !isAnthropicEndpoint(endpoint)) body.reasoning_effort = "none";
-    if (options.maxOutputTokens != null) body.max_tokens = options.maxOutputTokens;
+    if (!officialOpenAi && !isAnthropicEndpoint(endpoint)) body.reasoning_effort = "none";
+    else if (openAiReasoning) body.reasoning_effort = "low";
+    // OpenAI deprecated max_tokens and its reasoning models reject it; other servers still expect it.
+    if (options.maxOutputTokens != null) body[officialOpenAi ? "max_completion_tokens" : "max_tokens"] = options.maxOutputTokens;
     if (options.schema) {
       body.response_format = {
         type: "json_schema",
