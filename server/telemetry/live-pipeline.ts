@@ -31,6 +31,15 @@ import { DirectSessionRecorderAdapter, type DirectCaptureRecording } from "../se
 import { DashboardCaptureObservation } from "../session-capture/dashboard-observation";
 import { markDashboardCaptureCheckpoint, publishObservedDashboardCaptureFacts } from "../session-capture/dashboard-processor";
 import { emitLiveNotification, emitLiveTelemetry } from "../live-engineer/tap";
+/**
+ * How much telemetry may wait while the pipeline is busy (a lap save, a session
+ * start). F1 25 at 60 Hz sends about 360 packets a second and each queued packet
+ * reserves about 18 KB, so this is roughly 10 seconds of F1 traffic. Memory is
+ * only used while a backlog exists.
+ */
+const PACKET_QUEUE_MAX_BYTES = 64 * 1024 * 1024;
+const DIRECT_SOURCE_QUEUE_MAX_BYTES = 64 * 1024 * 1024;
+const DIRECT_SOURCE_QUEUE_MAX_COUNT = 4096;
 type CaptureObservationEntry = { observation: DashboardCaptureObservation; rawFile: string | null };
 type RecordingSession = { sessionId: number; gameId: GameId; directCapture?: DirectCaptureRecording };
 type CapturedParserSource = {
@@ -158,7 +167,7 @@ export class LiveTelemetryPipeline {
     this._parserSourceFrames.set(input.frame, reference);
     if (this.recorder instanceof DirectSessionRecorderAdapter && this.recorder.active && !this._recordingSession?.directCapture?.hasFailed) {
       const bytes = input.frame.byteLength + (input.locator?.byteCost ?? 0) + 128;
-      if (this._pendingDirectBytes + bytes > 8 * 1024 * 1024 || this._pendingDirectSources.length - this._pendingDirectHead >= 1024) {
+      if (this._pendingDirectBytes + bytes > DIRECT_SOURCE_QUEUE_MAX_BYTES || this._pendingDirectSources.length - this._pendingDirectHead >= DIRECT_SOURCE_QUEUE_MAX_COUNT) {
         const error = new Error("Direct recording source queue capacity exhausted");
         this._recordingSession?.directCapture?.fail(error);
         return;
@@ -671,7 +680,7 @@ export class LiveTelemetryPipeline {
   async processPacket(packet: TelemetryPacket, source?: PacketSourceReference, frameTimeMs?: number): Promise<void> {
     while (this._ingressBarrier) await this._ingressBarrier;
     const reservedBytes = 16 * 1024 + (Buffer.isBuffer(source) ? source.length + (this._parserSourceFrames.get(source)?.locator?.byteCost ?? 0) : 0);
-    if (this._queuedPacketBytes + reservedBytes > 8 * 1024 * 1024) {
+    if (this._queuedPacketBytes + reservedBytes > PACKET_QUEUE_MAX_BYTES) {
       const error = new Error("Recording detector queue capacity exhausted");
       this.ws.broadcastNotification({ type: "recording-failed", sessionId: this._recordingSession?.sessionId, error: error.message });
       this._recordingSession?.directCapture?.fail(error);
