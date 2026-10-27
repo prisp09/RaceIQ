@@ -21,7 +21,7 @@ export type SessionLapRecord = {
 export const ANOMALY_RATIO = 1.4;
 export const ANOMALY_EXTRA_SECONDS = 30;
 
-function median(values: readonly number[]): number {
+export function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0 ? (sorted[middle - 1]! + sorted[middle]!) / 2 : sorted[middle]!;

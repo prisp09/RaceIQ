@@ -26,7 +26,8 @@ import {
   type InstructionKind,
 } from "./rules";
 import { PushToTalkWatcher, type PushToTalkBinding } from "./input-helper";
-import { anomalyReason, lapRecordFromTally, summarizeSession, type SessionLapRecord } from "./session-summary";
+import { anomalyReason, lapRecordFromTally, median, summarizeSession, type SessionLapRecord } from "./session-summary";
+import { assessCrash, crashPaceCallout, DAMAGE_STEP, ImpactDetector, readDamage, type DamageReading, type Impact } from "./crash";
 import { isPaceLap } from "@raceiq/shared/racing/lap-classification";
 import type { LapClassification } from "@raceiq/shared/racing/lap-classification";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
@@ -43,7 +44,10 @@ const SESSION_GUIDANCE: Record<EngineerSessionType, string> = {
 export type TranscriptEntry = { id: string; from: "driver" | "engineer"; text: string; at: string };
 export type EngineerSayKind = "callout" | "answer" | "ack";
 
-const COOLDOWN_MS: Record<string, number> = { sector: 0, "lap-summary": 0, status: 0, "coach-lap": 0, "fuel-critical": 60_000, "tyres-critical": 60_000 };
+const COOLDOWN_MS: Record<string, number> = { sector: 0, "lap-summary": 0, status: 0, "coach-lap": 0, "fuel-critical": 60_000, "tyres-critical": 60_000, crash: 45_000, "crash-pace": 120_000 };
+/** Damage telemetry lags the hit; wait this long before judging it. */
+export const CRASH_SETTLE_MS = 2500;
+const DAMAGE_HISTORY_MS = 2000;
 const ISSUE_COOLDOWN_MS = 4000;
 const TRANSCRIPT_LIMIT = 60;
 // Replies are capped at ~35 words by the prompt; the budget is mostly for the
@@ -151,6 +155,13 @@ export class EngineerService {
   private dossier = "";
   private dossierKey = "";
   bestLapCornerStats: CornerGroupStats[] = [];
+  private readonly impacts = new ImpactDetector();
+  private damageHistory: { at: number; reading: DamageReading }[] = [];
+  private pendingCrash: { impact: Impact; before: DamageReading | null; settleAt: number } | null = null;
+  /** The current lap had a crash; it's left out of pace analysis like an idle lap. */
+  private crashThisLap = false;
+  /** Damage was reported without a pit call; the next clean lap decides if it's costing too much. */
+  private crashPaceCheck: { usualLapS: number } | null = null;
 
   constructor(generate: EngineerGenerate = defaultGenerate, rng: Rng = Math.random) {
     this.generate = generate;
@@ -169,6 +180,7 @@ export class EngineerService {
         if (!this.settings.engineerEnabled) return;
         this.state.update(packet, sectors, pit);
         this.coDriverTick(packet);
+        this.crashTick(packet);
       },
       onNotification: (event) => {
         if (!this.settings.engineerEnabled) return;
@@ -213,6 +225,11 @@ export class EngineerService {
     this.coLapNumber = -1;
     this.tips.setTips([]);
     this.lastLapCornerStats = [];
+    this.impacts.reset();
+    this.damageHistory = [];
+    this.pendingCrash = null;
+    this.crashThisLap = false;
+    this.crashPaceCheck = null;
     this.bestLapCornerStats = [];
     this.dossierKey = "";
     this.sessionLaps.length = 0;
@@ -340,7 +357,8 @@ export class EngineerService {
     // Out laps, in laps and idle laps (far slower than usual) say nothing about pace: keep them out of analysis and calls.
     const classification = (event.classification ?? null) as LapClassification | null;
     const normalTimes = this.sessionLaps.filter((lap) => lap.valid && !lap.excluded).map((lap) => lap.timeS);
-    const excluded = !isPaceLap(classification) ? `not a pace lap (${classification})` : anomalyReason(lapTime, normalTimes);
+    const excluded = !isPaceLap(classification) ? `not a pace lap (${classification})` : this.crashThisLap ? "crash or heavy impact on this lap" : anomalyReason(lapTime, normalTimes);
+    this.crashThisLap = false;
     this.lastLapExcluded = excluded !== null;
     this.sessionLaps.push(lapRecordFromTally(Number(event.lapNumber) || this.sessionLaps.length + 1, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null, excluded));
     if (excluded) {
@@ -348,6 +366,11 @@ export class EngineerService {
       const critical = lapCompleteCallouts(this.mode, { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest, pit: this.state.pit, lastLapIssues: new Map(), lapsSinceStatus: 0 }, this.rng).filter((call) => call.priority === 2);
       for (const call of critical) this.say(call);
       return;
+    }
+    if (this.crashPaceCheck) {
+      const call = crashPaceCallout(lapTime, this.crashPaceCheck.usualLapS, this.rng);
+      this.crashPaceCheck = null;
+      if (call) this.say(call);
     }
     this.lapsSinceStatus++;
     const mode = this.mode === "quiet" && this.instructions.has("lap-delta") ? "normal" : this.mode;
@@ -410,6 +433,36 @@ export class EngineerService {
   }
 
   /** Co-driver: records each corner group and plays cached tips ahead of braking zones. */
+  /** Watches for a crash and, once damage telemetry settles, says at most one useful thing about it. */
+  crashTick(packet: TelemetryPacket, nowMs = Date.now()): void {
+    const reading = readDamage(packet);
+    if (reading) {
+      this.damageHistory.push({ at: nowMs, reading });
+      while (this.damageHistory.length > 1 && nowMs - this.damageHistory[0]!.at > DAMAGE_HISTORY_MS) this.damageHistory.shift();
+    }
+    const hit = this.impacts.update(packet, nowMs);
+    if (!this.pendingCrash) {
+      const before = this.damageHistory[0]?.reading ?? null;
+      // Damage can rise without a detectable hit (e.g. a slow-speed tap that breaks the wing).
+      const damageJump = reading !== null && before !== null && Object.entries(reading.parts).some(([part, value]) => value - (before.parts[part] ?? 0) >= DAMAGE_STEP);
+      if (hit || damageJump) {
+        this.pendingCrash = { impact: hit ?? { at: nowMs, speedLossMs: 0, peakG: 0, heavy: false }, before, settleAt: nowMs + CRASH_SETTLE_MS };
+        this.crashThisLap = true;
+      }
+      return;
+    }
+    if (nowMs < this.pendingCrash.settleAt) return;
+    const { impact, before } = this.pendingCrash;
+    this.pendingCrash = null;
+    this.damageHistory = reading ? [{ at: nowMs, reading }] : [];
+    const call = assessCrash(impact, before, reading, this.rng);
+    if (!call || (call.priority < 2 && this.mode === "quiet")) return;
+    this.say(call);
+    // Damage without a pit call: the next clean lap decides if it's costing too much.
+    const normalTimes = this.sessionLaps.filter((lap) => lap.valid && !lap.excluded).map((lap) => lap.timeS);
+    if (call.priority < 2 && /damage/i.test(call.text) && normalTimes.length >= 2) this.crashPaceCheck = { usualLapS: median(normalTimes) };
+  }
+
   coDriverTick(packet: TelemetryPacket, nowMs = Date.now()): void {
     const trackLength = this.state.trackLength;
     const segments = this.state.cornerSegments;
