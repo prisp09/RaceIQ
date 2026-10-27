@@ -3047,5 +3047,8 @@
   "engineer_close_window": "Sulje ikkuna",
   "engineer_popped_out": "Radio on omassa ikkunassaan.",
   "engineer_bring_back": "Palauta",
-  "engineer_jump_latest": "Siirry uusimpaan"
+  "engineer_jump_latest": "Siirry uusimpaan",
+  "engineer_usage_cost": "Tekoäly tässä sessiossa: {calls} kutsua · {tokens} tokenia · noin {cost} (arvio)",
+  "engineer_usage_tokens": "Tekoäly tässä sessiossa: {calls} kutsua · {tokens} tokenia",
+  "engineer_usage_detail": "Syöte {input}, välimuistista luettu {cacheRead}, välimuistiin kirjoitettu {cacheWrite}, tuloste {output}. Kustannus on arvio listahinnoista; malleille ilman tunnettua hintaa näytetään vain tokenit."
 }

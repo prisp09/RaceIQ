@@ -3046,5 +3046,8 @@
   "engineer_close_window": "Закрыть окно",
   "engineer_popped_out": "Радио открыто в отдельном окне.",
   "engineer_bring_back": "Вернуть",
-  "engineer_jump_latest": "К последним"
+  "engineer_jump_latest": "К последним",
+  "engineer_usage_cost": "ИИ в этой сессии: {calls} вызовов · {tokens} токенов · около {cost} (оценка)",
+  "engineer_usage_tokens": "ИИ в этой сессии: {calls} вызовов · {tokens} токенов",
+  "engineer_usage_detail": "Ввод {input}, чтение кэша {cacheRead}, запись кэша {cacheWrite}, вывод {output}. Стоимость — оценка по прайс-листу; для моделей без известной цены показываются только токены."
 }

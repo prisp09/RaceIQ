@@ -3046,5 +3046,8 @@
   "engineer_close_window": "Zamknij okno",
   "engineer_popped_out": "Radio jest w osobnym oknie.",
   "engineer_bring_back": "Przywróć",
-  "engineer_jump_latest": "Przejdź do najnowszych"
+  "engineer_jump_latest": "Przejdź do najnowszych",
+  "engineer_usage_cost": "AI w tej sesji: {calls} wywołań · {tokens} tokenów · około {cost} (szacunek)",
+  "engineer_usage_tokens": "AI w tej sesji: {calls} wywołań · {tokens} tokenów",
+  "engineer_usage_detail": "Wejście {input}, odczyt z cache {cacheRead}, zapis do cache {cacheWrite}, wyjście {output}. Koszt to szacunek wg cennika; dla modeli bez znanej ceny liczone są tylko tokeny."
 }

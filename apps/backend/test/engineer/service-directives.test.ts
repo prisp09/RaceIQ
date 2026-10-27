@@ -5,6 +5,7 @@ import { loadSettings, saveSettings } from "@raceiq/backend-core/runtime/config/
 import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
 import { CRASH_SETTLE_MS, EngineerService } from "../../src/engineer/service";
+import { engineerUsage } from "../../src/engineer/usage";
 
 describe("race engineer reply directives", () => {
   test("strips and applies instruction lines", () => {
@@ -359,6 +360,26 @@ describe("race engineer puncture calls", () => {
       service.stop();
       wsManager.broadcastNotification = original;
       saveSettings({ ...loadSettings(), engineerMode: "normal" });
+    }
+  });
+});
+
+describe("race engineer cost readout", () => {
+  test("broadcasts usage as it changes, reports it in state and clears it for a new session", () => {
+    const events: Record<string, unknown>[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-usage") events.push(event); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(undefined, () => 0);
+    try {
+      service.start();
+      engineerUsage.add({ provider: "anthropic", model: "claude-haiku-5-5", inputTokens: 400, outputTokens: 60, cacheReadTokens: 5000, cacheWriteTokens: 0 });
+      expect(events.at(-1)?.usage).toMatchObject({ calls: 1, cacheReadTokens: 5000 });
+      expect(service.status().usage).toMatchObject({ calls: 1, inputTokens: 400, outputTokens: 60 });
+      service.newSession("race");
+      expect(service.status().usage).toMatchObject({ calls: 0, costUsd: null });
+    } finally {
+      service.stop();
+      wsManager.broadcastNotification = original;
     }
   });
 });

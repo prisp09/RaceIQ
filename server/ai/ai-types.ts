@@ -8,6 +8,10 @@ export type AiUsage = {
   costUsd: number;
   durationMs: number;
   model: string;
+  /** Part of inputTokens served from the provider's prompt cache, when reported. */
+  cacheReadTokens?: number;
+  /** Hidden reasoning billed as output but not counted in outputTokens (Gemini thoughts), when reported. */
+  reasoningTokens?: number;
 };
 
 /** Provider-neutral result retained by existing analysis consumers. */

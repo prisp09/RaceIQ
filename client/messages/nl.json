@@ -3046,5 +3046,8 @@
   "engineer_close_window": "Venster sluiten",
   "engineer_popped_out": "De radio staat in een eigen venster.",
   "engineer_bring_back": "Terughalen",
-  "engineer_jump_latest": "Naar nieuwste"
+  "engineer_jump_latest": "Naar nieuwste",
+  "engineer_usage_cost": "AI deze sessie: {calls} aanroepen · {tokens} tokens · ongeveer {cost} (schatting)",
+  "engineer_usage_tokens": "AI deze sessie: {calls} aanroepen · {tokens} tokens",
+  "engineer_usage_detail": "Invoer {input}, cache gelezen {cacheRead}, cache geschreven {cacheWrite}, uitvoer {output}. De kosten zijn een schatting op basis van lijstprijzen; modellen zonder bekende prijs tellen alleen tokens."
 }

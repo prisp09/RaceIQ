@@ -15,6 +15,10 @@ export interface AiResult {
     costUsd: number;
     durationMs: number;
     model: string;
+    /** Part of inputTokens served from the provider's prompt cache, when reported. */
+    cacheReadTokens?: number;
+    /** Hidden reasoning billed as output but not counted in outputTokens (Gemini thoughts), when reported. */
+    reasoningTokens?: number;
   };
 }
 
@@ -306,7 +310,7 @@ export async function runGeminiRequest(options: GeminiRequestOptions): Promise<A
 
     const data = await res.json() as {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; cachedContentTokenCount?: number; thoughtsTokenCount?: number };
     };
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!text.trim()) throw new Error("Gemini returned empty response");
@@ -321,6 +325,8 @@ export async function runGeminiRequest(options: GeminiRequestOptions): Promise<A
         costUsd: 0,
         durationMs,
         model,
+        cacheReadTokens: usage.cachedContentTokenCount ?? 0,
+        reasoningTokens: usage.thoughtsTokenCount ?? 0,
       },
     };
   } catch (error) {
@@ -413,7 +419,7 @@ export async function runOpenAiCompatible(options: OpenAiRequestOptions): Promis
 
     const data = await res.json() as {
       choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
+      usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } };
     };
     const text = data.choices?.[0]?.message?.content ?? "";
     if (!text.trim()) {
@@ -432,6 +438,7 @@ export async function runOpenAiCompatible(options: OpenAiRequestOptions): Promis
         costUsd: 0,
         durationMs,
         model,
+        cacheReadTokens: usage.prompt_tokens_details?.cached_tokens ?? 0,
       },
     };
   } catch (error) {

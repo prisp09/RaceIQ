@@ -3050,5 +3050,8 @@
   "engineer_close_window": "Close window",
   "engineer_popped_out": "Engineer radio is in its own window.",
   "engineer_bring_back": "Bring back",
-  "engineer_jump_latest": "Jump to latest"
+  "engineer_jump_latest": "Jump to latest",
+  "engineer_usage_cost": "AI this session: {calls} calls · {tokens} tokens · about {cost} (estimate)",
+  "engineer_usage_tokens": "AI this session: {calls} calls · {tokens} tokens",
+  "engineer_usage_detail": "Input {input}, cache read {cacheRead}, cache write {cacheWrite}, output {output}. Cost is an estimate from list prices; models without a known price count tokens only."
 }

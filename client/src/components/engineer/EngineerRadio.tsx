@@ -15,6 +15,31 @@ type Line = { id: string; from: "driver" | "engineer"; text: string };
 type EngineerEvent = { type: string } & Record<string, unknown>;
 type Mode = "quiet" | "normal" | "coach" | "co-driver";
 type SessionType = "practice" | "qualifying" | "race";
+type Usage = { calls: number; inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; costUsd: number | null };
+
+function formatTokens(count: number): string {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return String(count);
+}
+
+function formatUsd(amount: number): string {
+  return `$${amount.toFixed(amount < 0.1 ? 3 : 2)}`;
+}
+
+/** AI tokens and estimated cost for this engineer session; hidden until the first AI call. */
+function EngineerUsageLine({ usage }: { usage: Usage | null }) {
+  if (!usage || usage.calls === 0) return null;
+  const tokens = formatTokens(usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens);
+  const detail = m.engineer_usage_detail({ input: formatTokens(usage.inputTokens), cacheRead: formatTokens(usage.cacheReadTokens), cacheWrite: formatTokens(usage.cacheWriteTokens), output: formatTokens(usage.outputTokens) });
+  return (
+    <p className="text-app-caption text-app-text-muted" title={detail}>
+      {usage.costUsd === null
+        ? m.engineer_usage_tokens({ calls: usage.calls, tokens })
+        : m.engineer_usage_cost({ calls: usage.calls, tokens, cost: formatUsd(usage.costUsd) })}
+    </p>
+  );
+}
 
 const MAX_LINES = 8;
 const WINDOW_MAX_LINES = 200;
@@ -45,6 +70,7 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
   const [draft, setDraft] = useState("");
   const [confirmingNewSession, setConfirmingNewSession] = useState(false);
   const [sessionType, setSessionType] = useState<SessionType | null>(null);
+  const [usage, setUsage] = useState<Usage | null>(null);
   const [micPermission, setMicPermission] = useState<"granted" | "prompt" | "denied" | "unknown">("unknown");
 
   useEffect(() => {
@@ -124,8 +150,9 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
     let cancelled = false;
     void authenticatedFetch("/api/engineer/state").then(async (res) => {
       if (!res.ok || cancelled) return;
-      const state = await res.json() as { live: boolean; thinking: boolean; transcript: Line[]; sessionType: SessionType | null };
+      const state = await res.json() as { live: boolean; thinking: boolean; transcript: Line[]; sessionType: SessionType | null; usage?: Usage };
       setSessionType(state.sessionType);
+      setUsage(state.usage ?? null);
       setLive(state.live);
       setThinking(state.thinking);
       setLines(state.transcript.slice(-maxLines));
@@ -151,6 +178,8 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
       } else if (data.type === "engineer-state") {
         setThinking(Boolean(data.thinking));
         setLive(Boolean(data.live));
+      } else if (data.type === "engineer-usage") {
+        setUsage((data.usage as Usage | undefined) ?? null);
       } else if (data.type === "engineer-error") {
         setError(String(data.message ?? m.engineer_error_generic()));
       } else if (data.type === "engineer-ptt") {
@@ -314,6 +343,7 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
               <p className="text-app-caption text-app-text-muted">{binding ? m.engineer_ptt_hint_binding({ binding }) : m.engineer_ptt_hint_unbound()}</p>
             )}
             {micMode === "open-mic" && started && <p className="text-app-caption text-app-text-muted">{m.engineer_open_mic_hint()}</p>}
+            <EngineerUsageLine usage={usage} />
           </div>
         )}
       </div>

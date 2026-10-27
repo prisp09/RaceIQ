@@ -3050,5 +3050,8 @@
   "engineer_close_window": "Fenster schließen",
   "engineer_popped_out": "Der Funk läuft in einem eigenen Fenster.",
   "engineer_bring_back": "Zurückholen",
-  "engineer_jump_latest": "Zur neuesten"
+  "engineer_jump_latest": "Zur neuesten",
+  "engineer_usage_cost": "KI in dieser Session: {calls} Aufrufe · {tokens} Tokens · etwa {cost} (Schätzung)",
+  "engineer_usage_tokens": "KI in dieser Session: {calls} Aufrufe · {tokens} Tokens",
+  "engineer_usage_detail": "Eingabe {input}, Cache gelesen {cacheRead}, Cache geschrieben {cacheWrite}, Ausgabe {output}. Die Kosten sind eine Schätzung nach Listenpreisen; Modelle ohne bekannten Preis zählen nur Tokens."
 }

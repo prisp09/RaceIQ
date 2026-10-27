@@ -3046,5 +3046,8 @@
   "engineer_close_window": "Fermer la fenêtre",
   "engineer_popped_out": "La radio est dans sa propre fenêtre.",
   "engineer_bring_back": "Ramener",
-  "engineer_jump_latest": "Aller au plus récent"
+  "engineer_jump_latest": "Aller au plus récent",
+  "engineer_usage_cost": "IA cette session : {calls} appels · {tokens} jetons · environ {cost} (estimation)",
+  "engineer_usage_tokens": "IA cette session : {calls} appels · {tokens} jetons",
+  "engineer_usage_detail": "Entrée {input}, lecture cache {cacheRead}, écriture cache {cacheWrite}, sortie {output}. Le coût est une estimation d'après les prix publics ; les modèles sans prix connu ne comptent que les jetons."
 }
