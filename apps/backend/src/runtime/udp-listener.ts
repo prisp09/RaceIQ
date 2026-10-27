@@ -27,16 +27,11 @@ const PACKETS_PER_SEC_WINDOW = 1000;
 
 /** The only F1 UDP format the parser reads (the 2025 setting in F1 25). */
 const F1_SUPPORTED_FORMAT = 2025;
-/** Car telemetry packets per second at or above this means F1's UDP Send Rate is 60 Hz. */
-const F1_RATE_WARNING_HZ = 45;
 
 class UdpListener {
   private _droppedPackets = 0;
   private _lastProcessErrorLogAt = 0;
   private _lastFormatWarningAt = 0;
-  private _f1RateWindowStart = 0;
-  private _f1CarTelemetryCount = 0;
-  private _f1RateWarned = false;
   private _totalPackets = 0;
   private _receiving = false;
   private _packetsInWindow = 0;
@@ -219,25 +214,6 @@ class UdpListener {
     wsManager.broadcastNotification({ type: "telemetry-warning", code: "f1-udp-format", format, supported: F1_SUPPORTED_FORMAT });
   }
 
-  /**
-   * F1 sends one car telemetry packet (id 6) per frame, so their rate is the in-game UDP Send
-   * Rate. At 60 Hz a lap save can back up recording, so suggest 30 Hz once per app run.
-   */
-  private checkF1SendRate(sourceFrame: Buffer, now: number): void {
-    if (this._f1RateWarned || sourceFrame[6] !== 6) return;
-    if (now - this._f1RateWindowStart > 5000) {
-      const hz = Math.round(this._f1CarTelemetryCount / ((now - this._f1RateWindowStart) / 1000));
-      if (this._f1RateWindowStart > 0 && hz >= F1_RATE_WARNING_HZ && now - this._f1RateWindowStart < 7000) {
-        this._f1RateWarned = true;
-        console.warn(`[UDP] F1 is sending at about ${hz} Hz; 30 Hz is recommended`);
-        wsManager.broadcastNotification({ type: "telemetry-warning", code: "f1-send-rate", hz });
-      }
-      this._f1RateWindowStart = now;
-      this._f1CarTelemetryCount = 0;
-    }
-    this._f1CarTelemetryCount++;
-  }
-
   private async handlePacket(sourceFrame: Buffer): Promise<void> {
     const frameTimeMs = Date.now();
     this._totalPackets++;
@@ -268,7 +244,6 @@ class UdpListener {
     }
 
     this._receiving = true;
-    if (packet.gameId === "f1-2025") this.checkF1SendRate(sourceFrame, frameTimeMs);
     if (packet.gameId === "fm-2023") this._forzaRaceActive = true;
     try {
       await processPacket(packet, sourceFrame, frameTimeMs);
