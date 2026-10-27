@@ -134,6 +134,19 @@ export const sessions = sqliteTable(
 		index("idx_sessions_game_track_id").on(table.gameId, table.trackId),
 	],
 );
+/** End-of-session race engineer debrief and its key radio calls (migration v83). */
+export const engineerDebriefs = sqliteTable("engineer_debriefs", {
+	sessionId: integer("session_id")
+		.primaryKey()
+		.references(() => sessions.id, { onDelete: "cascade" }),
+	debrief: text("debrief").notNull(),
+	sessionType: text("session_type"),
+	finalPosition: integer("final_position"),
+	/** JSON array of { at, text } for the session's key engineer calls. */
+	calls: text("calls").notNull().default("[]"),
+	createdAt: text("created_at").notNull(),
+});
+
 export const sessionResults = sqliteTable(
 	"session_results",
 	{

@@ -13,6 +13,7 @@ import { resolveAi } from "../ai/ai-runtime";
 import { getAiProviderApiKey } from "@raceiq/backend-core/ai/openai-compatible-provider";
 import { generateWithClaude } from "./claude-native";
 import { engineerUsage, type UsageSummary } from "./usage";
+import { saveEngineerDebrief, type EngineerDebrief } from "@raceiq/backend-core/db/engineer-debrief-queries";
 import { buildDriverDossier } from "./dossier";
 import { EngineerLiveState, type IssueEvent } from "./state";
 import {
@@ -55,6 +56,9 @@ export const CRASH_SETTLE_MS = 2500;
 const DAMAGE_HISTORY_MS = 2000;
 const ISSUE_COOLDOWN_MS = 4000;
 const TRANSCRIPT_LIMIT = 60;
+/** Calls kept with the saved debrief: strategy, race, damage and answers, not every lap time or tip. */
+const KEY_CALL = /^(strategy-|race-|puncture-|crash|fuel-critical|tyres-critical)/;
+const KEY_CALL_LIMIT = 50;
 // Replies are capped at ~35 words by the prompt; the budget is mostly for the
 // model's hidden reasoning, which Claude counts against max_tokens.
 export const ENGINEER_MAX_OUTPUT_TOKENS = 2000;
@@ -206,9 +210,14 @@ export class EngineerService {
   /** Damage was reported without a pit call; the next clean lap decides if it's costing too much. */
   private crashPaceCheck: { usualLapS: number } | null = null;
 
-  constructor(generate: EngineerGenerate = defaultGenerate, rng: Rng = Math.random) {
+  /** The session's key calls, saved with the debrief. */
+  private keyCalls: { at: string; text: string }[] = [];
+  private readonly saveDebrief: (debrief: EngineerDebrief) => Promise<void>;
+
+  constructor(generate: EngineerGenerate = defaultGenerate, rng: Rng = Math.random, saveDebrief: (debrief: EngineerDebrief) => Promise<void> = saveEngineerDebrief) {
     this.generate = generate;
     this.rng = rng;
+    this.saveDebrief = saveDebrief;
     this.state = new EngineerLiveState((event) => this.onIssue(event), (sector, sectors) => this.onSector(sector, sectors));
     this.ptt = new PushToTalkWatcher(
       (pressed) => wsManager.broadcastNotification({ type: "engineer-ptt", pressed }),
@@ -294,6 +303,7 @@ export class EngineerService {
     this.gaps.reset();
     this.punctures.reset();
     this.punctureThisLap = false;
+    this.keyCalls = [];
     engineerUsage.reset();
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
   }
@@ -345,6 +355,10 @@ export class EngineerService {
     this.lastSaid.set(callout.key, now);
     this.tips.markBusy(now + speechSeconds(callout.text) * 1000);
     const entry = this.record("engineer", callout.text);
+    if (kind === "answer" || KEY_CALL.test(callout.key)) {
+      this.keyCalls.push({ at: entry.at, text: callout.text });
+      if (this.keyCalls.length > KEY_CALL_LIMIT) this.keyCalls.shift();
+    }
     wsManager.broadcastNotification({ type: "engineer-say", id: entry.id, kind, priority: callout.priority, text: callout.text, createdAt: entry.at });
   }
 
@@ -430,6 +444,7 @@ export class EngineerService {
       this.lapsSinceStatus = 0;
       this.strategy.reset();
       this.gaps.reset();
+      this.keyCalls = [];
     }
     const isValid = event.isValid !== false;
     const previousBest = this.bestLap;
@@ -580,7 +595,16 @@ export class EngineerService {
     } catch {
       text = "";
     }
-    this.say(text ? { key: "session-end", priority: 1, text } : sessionEndCallout(position, isRace, this.rng));
+    const call = text ? { key: "session-end", priority: 1 as const, text } : sessionEndCallout(position, isRace, this.rng);
+    this.say(call);
+    // Keep the debrief with the session so it shows on the session's page later.
+    const sessionId = Number(this.sessionKey);
+    if (!Number.isInteger(sessionId) || sessionId <= 0) return;
+    try {
+      await this.saveDebrief({ sessionId, debrief: call.text, sessionType: this.sessionType, finalPosition: position, calls: [...this.keyCalls], createdAt: new Date().toISOString() });
+    } catch (error) {
+      console.warn("[Engineer] Could not save the session debrief:", error instanceof Error ? error.message : String(error));
+    }
   }
 
   /** Co-driver: records each corner group and plays cached tips ahead of braking zones. */

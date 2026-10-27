@@ -51,6 +51,7 @@
     "./db/discovered-cars": "./db/discovered-cars.ts",
     "./db/discovered-tracks": "./db/discovered-tracks.ts",
     "./db/driver-profile-queries": "./db/driver-profile-queries.ts",
+    "./db/engineer-debrief-queries": "./db/engineer-debrief-queries.ts",
     "./db/experiment-action-queries": "./db/experiment-action-queries.ts",
     "./db/experiment-lap-queries": "./db/experiment-lap-queries.ts",
     "./db/experiment-queries": "./db/experiment-queries.ts",

@@ -3052,5 +3052,8 @@
   "engineer_usage_detail": "输入 {input}，缓存读取 {cacheRead}，缓存写入 {cacheWrite}，输出 {output}。费用按公开价格估算；价格未知的模型只显示令牌数。",
   "engineer_repeat_label": "重复上一条消息按钮",
   "engineer_repeat_help": "驾驶时按下即可再次收听上一条无线电消息。与按键通话一样，在游戏处于前台时也可使用。",
-  "engineer_repeat_last": "重复上一条消息"
+  "engineer_repeat_last": "重复上一条消息",
+  "engineer_debrief_title": "赛车工程师复盘",
+  "engineer_debrief_calls": "关键无线电消息（{count}）",
+  "engineer_debrief_position": "完赛 P{position}"
 }

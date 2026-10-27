@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SearchSelect } from "@/components/ui/SearchSelect";
 import { LapAnalyse } from "@/components/analyse/LapAnalyse";
+import { EngineerDebrief } from "@/components/engineer/EngineerDebrief";
 import { TireGrid } from "@/components/telemetry/TireGrid";
 import { SectorDetailView } from "@/components/tunes/SectorDetailView";
 import { SectorMap } from "@/components/tunes/SectorMap";
@@ -29,7 +30,7 @@ import { m } from "@/paraglide/messages";
 
 const sessionAnalyseHost: SessionAnalyseHost = {
   m, Button, Badge, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  SearchSelect, LapAnalyse, TireGrid, SectorDetailView, SectorMap, TrackFocusView, IssuePill, CornerBars,
+  SearchSelect, LapAnalyse, EngineerDebrief, TireGrid, SectorDetailView, SectorMap, TrackFocusView, IssuePill, CornerBars,
   CORNERS, METRICS, bandColor, buildSectorRanges, sectorIndexForTelemetryIndex, metricDisplayValue, tuneMetricValue, tuneMetricsFor,
   useGameId, useSessions, useSessionLaps, useAlignedTelemetry, useLapIssues, useTirePressureOptimal, useUnits,
   useCarName, useTrackName, useResolveNames, getGameRoute, formatLapTime,

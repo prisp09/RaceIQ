@@ -3052,5 +3052,8 @@
   "engineer_usage_detail": "Вхід {input}, читання кешу {cacheRead}, запис кешу {cacheWrite}, вихід {output}. Вартість — оцінка за прейскурантом; для моделей без відомої ціни показуються лише токени.",
   "engineer_repeat_label": "Кнопка повтору останнього повідомлення",
   "engineer_repeat_help": "Натисніть під час їзди, щоб ще раз почути останнє повідомлення по радіо. Працює, коли гра у фокусі, як і push-to-talk.",
-  "engineer_repeat_last": "Повторити останнє повідомлення"
+  "engineer_repeat_last": "Повторити останнє повідомлення",
+  "engineer_debrief_title": "Підсумок від гоночного інженера",
+  "engineer_debrief_calls": "Ключові радіоповідомлення ({count})",
+  "engineer_debrief_position": "Фініш P{position}"
 }

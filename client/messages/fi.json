@@ -3053,5 +3053,8 @@
   "engineer_usage_detail": "Syöte {input}, välimuistista luettu {cacheRead}, välimuistiin kirjoitettu {cacheWrite}, tuloste {output}. Kustannus on arvio listahinnoista; malleille ilman tunnettua hintaa näytetään vain tokenit.",
   "engineer_repeat_label": "Toista viimeisin viesti -painike",
   "engineer_repeat_help": "Paina ajon aikana kuullaksesi viimeisimmän radioviestin uudelleen. Toimii pelin ollessa aktiivisena, kuten puhepainike.",
-  "engineer_repeat_last": "Toista viimeisin viesti"
+  "engineer_repeat_last": "Toista viimeisin viesti",
+  "engineer_debrief_title": "Kilpainsinöörin yhteenveto",
+  "engineer_debrief_calls": "Tärkeät radioviestit ({count})",
+  "engineer_debrief_position": "Maaliin sijalla P{position}"
 }

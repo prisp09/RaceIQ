@@ -3052,5 +3052,8 @@
   "engineer_usage_detail": "入力 {input}、キャッシュ読み取り {cacheRead}、キャッシュ書き込み {cacheWrite}、出力 {output}。費用は公開価格による概算です。価格が不明なモデルはトークン数のみ表示します。",
   "engineer_repeat_label": "最後のメッセージを繰り返すボタン",
   "engineer_repeat_help": "走行中に押すと、最後の無線メッセージをもう一度聞けます。プッシュトゥトークと同じく、ゲームがフォーカス中でも使えます。",
-  "engineer_repeat_last": "最後のメッセージを繰り返す"
+  "engineer_repeat_last": "最後のメッセージを繰り返す",
+  "engineer_debrief_title": "レースエンジニアの振り返り",
+  "engineer_debrief_calls": "主な無線 ({count})",
+  "engineer_debrief_position": "P{position}でフィニッシュ"
 }

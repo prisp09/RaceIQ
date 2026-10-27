@@ -5,6 +5,7 @@ import { engineerService } from "../engineer/service";
 import { captureBinding, INPUT_HELPER_SUPPORTED, listInputDevices } from "../engineer/input-helper";
 import { synthesizeEngineerSpeech } from "../engineer/azure-tts";
 import { loadSettings } from "@raceiq/backend-core/runtime/config/settings";
+import { getEngineerDebrief } from "@raceiq/backend-core/db/engineer-debrief-queries";
 
 let bindInProgress = false;
 
@@ -29,6 +30,13 @@ export const engineerRoutes = new Hono()
     } catch (error) {
       return c.json({ code: "TTS_FAILED", error: error instanceof Error ? error.message : "Speech failed" }, 502);
     }
+  })
+
+  .get("/api/engineer/debrief/:sessionId", async (c) => {
+    const sessionId = Number(c.req.param("sessionId"));
+    if (!Number.isInteger(sessionId) || sessionId <= 0) return c.json({ code: "BAD_SESSION", error: "Invalid session id." }, 400);
+    const debrief = await getEngineerDebrief(sessionId);
+    return debrief ? c.json(debrief) : c.json({ code: "NOT_FOUND", error: "No engineer debrief for this session." }, 404);
   })
 
   .post("/api/engineer/repeat", (c) => {

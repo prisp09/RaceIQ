@@ -3052,5 +3052,8 @@
   "engineer_usage_detail": "Entrada {input}, lectura de caché {cacheRead}, escritura de caché {cacheWrite}, salida {output}. El coste es una estimación según precios de lista; los modelos sin precio conocido solo cuentan tokens.",
   "engineer_repeat_label": "Botón repetir último mensaje",
   "engineer_repeat_help": "Púlsalo mientras conduces para volver a oír el último mensaje de radio. Funciona con el juego en primer plano, como el pulsar para hablar.",
-  "engineer_repeat_last": "Repetir último mensaje"
+  "engineer_repeat_last": "Repetir último mensaje",
+  "engineer_debrief_title": "Resumen del ingeniero de carrera",
+  "engineer_debrief_calls": "Mensajes de radio clave ({count})",
+  "engineer_debrief_position": "Terminó P{position}"
 }
