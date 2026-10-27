@@ -3050,5 +3050,6 @@
   "engineer_maximize": "Suurenna",
   "engineer_close_window": "Sulje ikkuna",
   "engineer_popped_out": "Radio on omassa ikkunassaan.",
-  "engineer_bring_back": "Palauta"
+  "engineer_bring_back": "Palauta",
+  "engineer_jump_latest": "Siirry uusimpaan"
 }

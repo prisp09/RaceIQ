@@ -3049,5 +3049,6 @@
   "engineer_maximize": "最大化",
   "engineer_close_window": "ウィンドウを閉じる",
   "engineer_popped_out": "無線は別ウィンドウで開いています。",
-  "engineer_bring_back": "元に戻す"
+  "engineer_bring_back": "元に戻す",
+  "engineer_jump_latest": "最新へ移動"
 }

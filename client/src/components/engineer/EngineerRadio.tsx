@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, ExternalLink, Maximize2, Mic, Radio, RotateCcw, Send, X } from "lucide-react";
+import { ArrowDown, ChevronDown, ChevronUp, ExternalLink, Maximize2, Mic, Radio, RotateCcw, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authenticatedFetch } from "@/lib/rpc";
@@ -9,6 +9,7 @@ import { EngineerModePicker } from "./EngineerModePicker";
 import { maximizeWindow } from "./EngineerDrawer";
 import { EngineerSpeaker } from "./engineer-voice";
 import { WebSpeechToText, type SpeechToText } from "./speech-to-text";
+import { useStickToBottom } from "./use-stick-to-bottom";
 
 type Line = { id: string; from: "driver" | "engineer"; text: string };
 type EngineerEvent = { type: string } & Record<string, unknown>;
@@ -69,6 +70,7 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
     }
   }, []);
   const speakerRef = useRef<EngineerSpeaker | null>(null);
+  const transcript = useStickToBottom<HTMLOListElement>();
   const sttRef = useRef<SpeechToText | null>(null);
   const startedRef = useRef(false);
   const micModeRef = useRef(micMode);
@@ -259,7 +261,8 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
                 {m.engineer_start_radio()}
               </Button>
             )}
-            <ol className={inWindow ? "flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto text-sm leading-snug" : "flex max-h-48 flex-col gap-1 overflow-y-auto text-xs leading-snug"} aria-label={m.engineer_transcript_label()}>
+            <div className={inWindow ? "relative flex min-h-0 flex-1 flex-col" : "relative"}>
+            <ol ref={transcript.ref} className={inWindow ? "flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto text-sm leading-snug" : "flex max-h-48 flex-col gap-1 overflow-y-auto text-xs leading-snug"} aria-label={m.engineer_transcript_label()}>
               {lines.length === 0 && <li className="text-app-text-muted">{m.engineer_transcript_empty()}</li>}
               {lines.map((line) => (
                 <li key={line.id} className={line.from === "engineer" ? "text-app-text" : "text-app-text-secondary"}>
@@ -269,6 +272,13 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
               ))}
               {interim && <li className="italic text-app-text-muted">{interim}</li>}
             </ol>
+            {transcript.showJump && (
+              <Button variant="app-outline" size="app-sm" onClick={transcript.scrollToBottom} className="absolute bottom-1 left-1/2 -translate-x-1/2 gap-1 shadow-sm">
+                <ArrowDown className="size-3" aria-hidden="true" />
+                {m.engineer_jump_latest()}
+              </Button>
+            )}
+            </div>
             {error && <p role="alert" className="text-xs text-status-danger">{error}</p>}
             <form
               className="flex items-center gap-1.5"

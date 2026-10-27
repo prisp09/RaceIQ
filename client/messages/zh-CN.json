@@ -3049,5 +3049,6 @@
   "engineer_maximize": "最大化",
   "engineer_close_window": "关闭窗口",
   "engineer_popped_out": "无线电已在独立窗口中打开。",
-  "engineer_bring_back": "移回此处"
+  "engineer_bring_back": "移回此处",
+  "engineer_jump_latest": "跳到最新"
 }

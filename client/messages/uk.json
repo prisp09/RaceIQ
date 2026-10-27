@@ -3049,5 +3049,6 @@
   "engineer_maximize": "Розгорнути",
   "engineer_close_window": "Закрити вікно",
   "engineer_popped_out": "Радіо відкрито в окремому вікні.",
-  "engineer_bring_back": "Повернути"
+  "engineer_bring_back": "Повернути",
+  "engineer_jump_latest": "До останніх"
 }
