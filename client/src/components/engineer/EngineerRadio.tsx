@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown, ChevronDown, ChevronUp, ExternalLink, Maximize2, Mic, Radio, RotateCcw, Send, X } from "lucide-react";
+import { ArrowDown, ChevronDown, ChevronUp, ExternalLink, Maximize2, Mic, Radio, Repeat, RotateCcw, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authenticatedFetch } from "@/lib/rpc";
@@ -178,6 +178,9 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
       } else if (data.type === "engineer-state") {
         setThinking(Boolean(data.thinking));
         setLive(Boolean(data.live));
+      } else if (data.type === "engineer-repeat") {
+        // The repeat button on the wheel: say it again without a second transcript line.
+        if (startedRef.current) speakerRef.current?.say(`${String(data.id)}-repeat-${Date.now()}`, String(data.text ?? ""), 1);
       } else if (data.type === "engineer-usage") {
         setUsage((data.usage as Usage | undefined) ?? null);
       } else if (data.type === "engineer-error") {
@@ -231,6 +234,12 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
 
   const status = thinking ? m.engineer_status_thinking() : listening ? m.engineer_status_listening() : live ? m.engineer_status_live() : m.engineer_status_waiting();
   const binding = displaySettings.engineerPushToTalk?.name;
+  const lastEngineerLine = lines.findLast((line) => line.from === "engineer");
+  const repeatLast = () => {
+    if (!lastEngineerLine) return;
+    if (!startedRef.current) start();
+    speakerRef.current?.say(`${lastEngineerLine.id}-repeat-${Date.now()}`, lastEngineerLine.text, 1);
+  };
 
   return (
     <div className={inWindow ? "flex h-full flex-col" : "pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] z-40 flex w-[min(22rem,calc(100%-2rem))] flex-col items-start"}>
@@ -241,6 +250,9 @@ export function EngineerRadio({ variant = "drawer", onPopOut }: EngineerRadioPro
           <span className="truncate text-xs text-app-text-muted" aria-live="polite">{status}</span>
           <div className="ml-auto flex items-center gap-1">
             <EngineerModePicker id="engineer-radio-mode" value={mode} onChange={setMode} className="w-28" />
+            <Button variant="app-ghost" size="icon-sm" onClick={repeatLast} disabled={!lastEngineerLine} aria-label={m.engineer_repeat_last()} title={m.engineer_repeat_last()}>
+              <Repeat className="size-4" />
+            </Button>
             <Button variant="app-ghost" size="icon-sm" onClick={() => setConfirmingNewSession((value) => !value)} aria-label={m.engineer_new_session()} title={m.engineer_new_session()}>
               <RotateCcw className="size-4" />
             </Button>

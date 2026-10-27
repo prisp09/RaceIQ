@@ -3053,5 +3053,8 @@
   "engineer_jump_latest": "Zur neuesten",
   "engineer_usage_cost": "KI in dieser Session: {calls} Aufrufe · {tokens} Tokens · etwa {cost} (Schätzung)",
   "engineer_usage_tokens": "KI in dieser Session: {calls} Aufrufe · {tokens} Tokens",
-  "engineer_usage_detail": "Eingabe {input}, Cache gelesen {cacheRead}, Cache geschrieben {cacheWrite}, Ausgabe {output}. Die Kosten sind eine Schätzung nach Listenpreisen; Modelle ohne bekannten Preis zählen nur Tokens."
+  "engineer_usage_detail": "Eingabe {input}, Cache gelesen {cacheRead}, Cache geschrieben {cacheWrite}, Ausgabe {output}. Die Kosten sind eine Schätzung nach Listenpreisen; Modelle ohne bekannten Preis zählen nur Tokens.",
+  "engineer_repeat_label": "Taste: letzte Meldung wiederholen",
+  "engineer_repeat_help": "Drücke sie während der Fahrt, um die letzte Funkmeldung noch einmal zu hören. Funktioniert wie Push-to-Talk auch, wenn das Spiel den Fokus hat.",
+  "engineer_repeat_last": "Letzte Meldung wiederholen"
 }

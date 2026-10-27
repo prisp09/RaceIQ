@@ -383,3 +383,31 @@ describe("race engineer cost readout", () => {
     }
   });
 });
+
+describe("race engineer repeat button", () => {
+  test("replays the last engineer message without a new transcript line", () => {
+    const events: Record<string, unknown>[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { events.push(event); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(undefined, () => 0);
+    try {
+      expect(service.repeatLast()).toBeNull();
+      service.say({ key: "test", priority: 1, text: "Box this lap." });
+      service.say({ key: "test-2", priority: 1, text: "Gap to P2 is 1.4." });
+      const before = service.transcript.length;
+      events.length = 0;
+      expect(service.repeatLast()?.text).toBe("Gap to P2 is 1.4.");
+      expect(events).toEqual([expect.objectContaining({ type: "engineer-repeat", text: "Gap to P2 is 1.4." })]);
+      expect(service.transcript.length).toBe(before);
+    } finally {
+      wsManager.broadcastNotification = original;
+    }
+  });
+
+  test("the repeat button binding is a saved setting", () => {
+    const binding = { kind: "joystick" as const, deviceId: 1, button: 7, name: "Wheel button 7" };
+    saveSettings({ ...loadSettings(), engineerRepeatButton: binding });
+    expect(loadSettings().engineerRepeatButton).toEqual(binding);
+    saveSettings({ ...loadSettings(), engineerRepeatButton: null });
+  });
+});

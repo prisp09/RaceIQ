@@ -3050,5 +3050,8 @@
   "engineer_jump_latest": "नवीनतम पर जाएँ",
   "engineer_usage_cost": "इस सत्र में AI: {calls} कॉल · {tokens} टोकन · लगभग {cost} (अनुमान)",
   "engineer_usage_tokens": "इस सत्र में AI: {calls} कॉल · {tokens} टोकन",
-  "engineer_usage_detail": "इनपुट {input}, कैश रीड {cacheRead}, कैश राइट {cacheWrite}, आउटपुट {output}। लागत सूची मूल्यों से अनुमानित है; जिन मॉडलों की कीमत ज्ञात नहीं है, उनके केवल टोकन गिने जाते हैं।"
+  "engineer_usage_detail": "इनपुट {input}, कैश रीड {cacheRead}, कैश राइट {cacheWrite}, आउटपुट {output}। लागत सूची मूल्यों से अनुमानित है; जिन मॉडलों की कीमत ज्ञात नहीं है, उनके केवल टोकन गिने जाते हैं।",
+  "engineer_repeat_label": "अंतिम संदेश दोहराएँ बटन",
+  "engineer_repeat_help": "ड्राइव करते समय दबाएँ और अंतिम रेडियो संदेश फिर से सुनें। पुश-टू-टॉक की तरह, गेम फ़ोकस में होने पर भी काम करता है।",
+  "engineer_repeat_last": "अंतिम संदेश दोहराएँ"
 }

@@ -167,6 +167,7 @@ export class EngineerService {
   private settingsTimer: ReturnType<typeof setInterval> | null = null;
   private unwatchUsage: (() => void) | null = null;
   private readonly ptt: PushToTalkWatcher;
+  private readonly repeatButton: PushToTalkWatcher;
 
   private readonly generate: EngineerGenerate;
   readonly tips = new TipScheduler();
@@ -213,6 +214,10 @@ export class EngineerService {
       (pressed) => wsManager.broadcastNotification({ type: "engineer-ptt", pressed }),
       (message) => this.error("INPUT_HELPER_FAILED", message),
     );
+    this.repeatButton = new PushToTalkWatcher(
+      (pressed) => { if (pressed) this.repeatLast(); },
+      (message) => this.error("INPUT_HELPER_FAILED", message),
+    );
   }
 
   start(): void {
@@ -246,6 +251,7 @@ export class EngineerService {
     this.unwatchUsage?.();
     this.unwatchUsage = null;
     this.ptt.stop();
+    this.repeatButton.stop();
   }
 
   refreshSettings(): void {
@@ -253,6 +259,7 @@ export class EngineerService {
     this.tips.setLeadSeconds(this.settings.engineerTipLeadSeconds);
     const wantsPtt = this.settings.engineerEnabled && this.settings.engineerMicMode === "push-to-talk";
     this.ptt.apply(wantsPtt ? this.settings.engineerPushToTalk as PushToTalkBinding | null : null);
+    this.repeatButton.apply(this.settings.engineerEnabled ? this.settings.engineerRepeatButton as PushToTalkBinding | null : null);
   }
 
   get mode(): EngineerMode {
@@ -339,6 +346,15 @@ export class EngineerService {
     this.tips.markBusy(now + speechSeconds(callout.text) * 1000);
     const entry = this.record("engineer", callout.text);
     wsManager.broadcastNotification({ type: "engineer-say", id: entry.id, kind, priority: callout.priority, text: callout.text, createdAt: entry.at });
+  }
+
+  /** Says the last radio message again (repeat button). Not added to the transcript a second time. */
+  repeatLast(): TranscriptEntry | null {
+    const last = this.transcript.findLast((entry) => entry.from === "engineer");
+    if (!last) return null;
+    this.tips.markBusy(Date.now() + speechSeconds(last.text) * 1000);
+    wsManager.broadcastNotification({ type: "engineer-repeat", id: last.id, text: last.text, createdAt: last.at });
+    return last;
   }
 
   async ask(question: string): Promise<{ text: string } | { error: string; code: string }> {

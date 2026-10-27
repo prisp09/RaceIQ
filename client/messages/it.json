@@ -3049,5 +3049,8 @@
   "engineer_jump_latest": "Vai all'ultimo",
   "engineer_usage_cost": "IA in questa sessione: {calls} chiamate · {tokens} token · circa {cost} (stima)",
   "engineer_usage_tokens": "IA in questa sessione: {calls} chiamate · {tokens} token",
-  "engineer_usage_detail": "Input {input}, lettura cache {cacheRead}, scrittura cache {cacheWrite}, output {output}. Il costo è una stima dai prezzi di listino; i modelli senza prezzo noto contano solo i token."
+  "engineer_usage_detail": "Input {input}, lettura cache {cacheRead}, scrittura cache {cacheWrite}, output {output}. Il costo è una stima dai prezzi di listino; i modelli senza prezzo noto contano solo i token.",
+  "engineer_repeat_label": "Pulsante ripeti ultimo messaggio",
+  "engineer_repeat_help": "Premilo mentre guidi per riascoltare l'ultimo messaggio radio. Funziona anche con il gioco in primo piano, come il push-to-talk.",
+  "engineer_repeat_last": "Ripeti ultimo messaggio"
 }

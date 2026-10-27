@@ -3049,5 +3049,8 @@
   "engineer_jump_latest": "Aller au plus récent",
   "engineer_usage_cost": "IA cette session : {calls} appels · {tokens} jetons · environ {cost} (estimation)",
   "engineer_usage_tokens": "IA cette session : {calls} appels · {tokens} jetons",
-  "engineer_usage_detail": "Entrée {input}, lecture cache {cacheRead}, écriture cache {cacheWrite}, sortie {output}. Le coût est une estimation d'après les prix publics ; les modèles sans prix connu ne comptent que les jetons."
+  "engineer_usage_detail": "Entrée {input}, lecture cache {cacheRead}, écriture cache {cacheWrite}, sortie {output}. Le coût est une estimation d'après les prix publics ; les modèles sans prix connu ne comptent que les jetons.",
+  "engineer_repeat_label": "Bouton répéter le dernier message",
+  "engineer_repeat_help": "Appuyez en roulant pour réentendre le dernier message radio. Fonctionne quand le jeu a le focus, comme le push-to-talk.",
+  "engineer_repeat_last": "Répéter le dernier message"
 }

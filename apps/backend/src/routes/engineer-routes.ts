@@ -31,6 +31,11 @@ export const engineerRoutes = new Hono()
     }
   })
 
+  .post("/api/engineer/repeat", (c) => {
+    const entry = engineerService.repeatLast();
+    return entry ? c.json({ text: entry.text }) : c.json({ code: "NOTHING_SAID", error: "Nothing to repeat yet." }, 404);
+  })
+
   .post("/api/engineer/test", zValidator("json", z.object({ text: z.string().max(200).optional() }).strict()), (c) => {
     const text = c.req.valid("json").text?.trim() || "Radio check. Loud and clear. Let's go racing.";
     engineerService.say({ key: "test", priority: 1, text }, "ack");

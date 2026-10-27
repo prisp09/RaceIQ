@@ -14,6 +14,12 @@ const SETTINGS_PATH = `${SETTINGS_DIR}/settings.json`;
 // explicitly pick a provider in Settings before any AI feature runs.
 const AiProviderSchema = z.enum(["", "gemini", "openai", "anthropic", "openai-compatible"]).default("");
 
+/** A keyboard key or a wheel / button-box button, captured by the Windows input helper. */
+const engineerButtonBinding = z.union([
+  z.object({ kind: z.literal("keyboard"), vk: z.number().int().min(1).max(254), name: z.string().max(40) }),
+  z.object({ kind: z.literal("joystick"), deviceId: z.number().int().min(0).max(15), button: z.number().int().min(1).max(32), name: z.string().max(80) }),
+]);
+
 const AppSettingsSchema = z.object({
   onboardingComplete: z.boolean().default(false),
   driverName: z.string().default(""),
@@ -47,10 +53,9 @@ const AppSettingsSchema = z.object({
   engineerEnabled: z.boolean().default(false),
   engineerMode: z.enum(["quiet", "normal", "coach", "co-driver"]).default("normal"),
   engineerMicMode: z.enum(["push-to-talk", "open-mic", "off"]).default("push-to-talk"),
-  engineerPushToTalk: z.union([
-    z.object({ kind: z.literal("keyboard"), vk: z.number().int().min(1).max(254), name: z.string().max(40) }),
-    z.object({ kind: z.literal("joystick"), deviceId: z.number().int().min(0).max(15), button: z.number().int().min(1).max(32), name: z.string().max(80) }),
-  ]).nullable().default(null),
+  engineerPushToTalk: engineerButtonBinding.nullable().default(null),
+  // Replays the last radio message; same kinds of binding as push to talk.
+  engineerRepeatButton: engineerButtonBinding.nullable().default(null),
   engineerVoiceURI: z.string().max(300).nullable().default(null),
   engineerVoiceRate: z.number().min(0.7).max(1.3).default(0.95),
   engineerVoicePitch: z.number().min(0.5).max(1.5).default(0.85),
