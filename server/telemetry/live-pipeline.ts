@@ -534,8 +534,10 @@ export class LiveTelemetryPipeline {
         this.pitTracker.setTireThresholds(adapter.tireHealthThresholds.yellow);
         this.pitTracker.setTireWearAvailable(resolveAnalysisTelemetry(adapter).tireWearRate.source !== "unavailable");
         if (!this._skipHistorySeeding) {
-          await this.pitTracker.seedFromHistory(trackIdentity, carIdentity, session.carPI, session.gameId, adapter.runtime.pit);
-          await this._seedSessionLaps(session.sessionId, session.gameId);
+          // History seeding reads old laps (and decodes one for tyre wear). Packets queue
+          // behind this callback, so run it beside them instead of in front of them.
+          this._sessionLaps = this._sessionLaps.filter((lap) => lap.sessionId === session.sessionId);
+          void this._seedFromHistory(session.sessionId, session.gameId, trackIdentity, carIdentity, session.carPI, adapter.runtime.pit);
         } else {
           this._sessionLaps = [];
         }
@@ -653,16 +655,36 @@ export class LiveTelemetryPipeline {
     });
   }
   /** Seed in-memory session laps from DB (called once on session start). */
+  /** Pit estimates and the session lap list from history, off the packet path. */
+  private async _seedFromHistory(
+    sessionId: number,
+    gameId: GameId,
+    trackIdentity: string,
+    carIdentity: string,
+    carPI: number,
+    pitRuntime: ReturnType<typeof getServerGame>["runtime"]["pit"],
+  ): Promise<void> {
+    await this.pitTracker.seedFromHistory(trackIdentity, carIdentity, carPI, gameId, pitRuntime);
+    await this._seedSessionLaps(sessionId, gameId);
+    if (this._lapDetector?.session?.sessionId === sessionId) this._broadcastSessionLaps();
+  }
+
   private async _seedSessionLaps(sessionId: number, gameId: GameId): Promise<void> {
     try {
       const allLaps = await this.db.getLaps(gameId, CURRENT_SESSION_LAP_SNAPSHOT_LIMIT);
-      const sessionLaps = allLaps.filter((l) => l.sessionId === sessionId).sort((a, b) => a.id - b.id);
+      // A newer session started while this was loading.
+      if (this._lapDetector?.session && this._lapDetector.session.sessionId !== sessionId) return;
+      const sessionLaps = allLaps.filter((l) => l.sessionId === sessionId);
+      // Keep laps saved while the history was loading.
+      const loaded = new Set(sessionLaps.map((lap) => lap.id));
+      sessionLaps.push(...this._sessionLaps.filter((lap) => lap.sessionId === sessionId && !loaded.has(lap.id)));
+      sessionLaps.sort((a, b) => a.id - b.id);
       if (sessionLaps.length > CURRENT_SESSION_LAP_SNAPSHOT_LIMIT) {
         sessionLaps.splice(0, sessionLaps.length - CURRENT_SESSION_LAP_SNAPSHOT_LIMIT);
       }
       this._sessionLaps = sessionLaps;
     } catch {
-      this._sessionLaps = [];
+      this._sessionLaps = this._sessionLaps.filter((lap) => lap.sessionId === sessionId);
     }
   }
 
