@@ -27,7 +27,7 @@ import {
 } from "./rules";
 import { PushToTalkWatcher, type PushToTalkBinding } from "./input-helper";
 import { anomalyReason, lapRecordFromTally, median, summarizeSession, type SessionLapRecord } from "./session-summary";
-import { assessCrash, crashPaceCallout, DAMAGE_STEP, ImpactDetector, readDamage, type DamageReading, type Impact } from "./crash";
+import { assessCrash, crashPaceCallout, ImpactDetector, readDamage, type DamageReading, type Impact } from "./crash";
 import { isPaceLap } from "@raceiq/shared/racing/lap-classification";
 import type { LapClassification } from "@raceiq/shared/racing/lap-classification";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TipScheduler, type CornerGroup, type CornerGroupStats } from "./co-driver";
@@ -444,13 +444,15 @@ export class EngineerService {
     if (!this.pendingCrash) {
       const before = this.damageHistory[0]?.reading ?? null;
       // Damage can rise without a detectable hit (e.g. a slow-speed tap that breaks the wing).
-      const damageJump = reading !== null && before !== null && Object.entries(reading.parts).some(([part, value]) => value - (before.parts[part] ?? 0) >= DAMAGE_STEP);
+      const damageJump = reading !== null && before !== null && Object.entries(reading.parts).some(([part, value]) => value - (before.parts[part] ?? 0) >= reading.step);
       if (hit || damageJump) {
         this.pendingCrash = { impact: hit ?? { at: nowMs, speedLossMs: 0, peakG: 0, heavy: false }, before, settleAt: nowMs + CRASH_SETTLE_MS };
         this.crashThisLap = true;
       }
       return;
     }
+    // Damage often shows a frame before the hit is measured; keep the real impact so its size counts.
+    if (hit && this.pendingCrash.impact.speedLossMs === 0 && this.pendingCrash.impact.peakG === 0) this.pendingCrash.impact = hit;
     if (nowMs < this.pendingCrash.settleAt) return;
     const { impact, before } = this.pendingCrash;
     this.pendingCrash = null;

@@ -20,7 +20,7 @@ function drive(detector: ImpactDetector, speeds: number[], extra: (index: number
 const first = () => 0;
 const light: Impact = { at: 0, speedLossMs: 16, peakG: 5, heavy: false };
 const heavy: Impact = { at: 0, speedLossMs: 40, peakG: 15, heavy: true };
-const damage = (parts: Record<string, number>, severity = true): DamageReading => ({ parts, severity });
+const damage = (parts: Record<string, number>, step = 8, severe = 50): DamageReading => ({ parts, step, severe });
 
 describe("impact detection", () => {
   test("hard braking is not a crash", () => {
@@ -30,7 +30,7 @@ describe("impact detection", () => {
   });
 
   test("a sudden stop is one impact, heavy when big", () => {
-    const impacts = drive(new ImpactDetector(), [60, 60, 60, 40, 15, 5, 5, 5, 5]);
+    const impacts = drive(new ImpactDetector(), [60, 60, 60, 40, 15, 5, 5, 5, 5], (index) => (index === 3 ? { AccelerationZ: 60 } : {}));
     expect(impacts).toHaveLength(1);
     expect(impacts[0]!.heavy).toBe(true);
   });
@@ -38,6 +38,20 @@ describe("impact detection", () => {
   test("a g-force spike needs some speed loss to count", () => {
     expect(drive(new ImpactDetector(), [50, 50, 50, 50], (index) => (index === 2 ? { AccelerationX: 100 } : {}))).toEqual([]);
     expect(drive(new ImpactDetector(), [50, 50, 44, 44], (index) => (index === 2 ? { AccelerationX: 100 } : {}))).toHaveLength(1);
+  });
+
+  test("a drop to zero with no g-force is a reset, not a crash", () => {
+    expect(drive(new ImpactDetector(), [45, 45, 45, 0, 0, 0])).toEqual([]);
+  });
+
+  test("a g glitch on a return to the pits is not a crash, and a teleport cancels a pending impact", () => {
+    expect(drive(new ImpactDetector(), [26, 26, 26, 0, 0], (index) => (index === 3 ? { AccelerationZ: 1067 * 9.81 } : {}))).toEqual([]);
+    const detector = new ImpactDetector();
+    const [impact] = drive(detector, [40, 40, 40, 20, 20], (index) => (index === 3 ? { AccelerationZ: 60 } : {}));
+    expect(impact).toBeDefined();
+    detector.update(packet({ Speed: 0, PositionX: 9000 }), 300);
+    expect(impact!.cancelled).toBe(true);
+    expect(assessCrash(impact!, null, null, first)).toBeNull();
   });
 
   test("a teleport back to the pits is not a crash", () => {
@@ -56,14 +70,14 @@ describe("impact detection", () => {
 describe("damage readings", () => {
   test("reads F1 parts on a 0-100 scale", () => {
     const reading = readDamage(packet({ f1: { frontLeftWingDamage: 10, frontRightWingDamage: 30, tyresDamageFL: 0 } as TelemetryPacket["f1"] }));
-    expect(reading?.severity).toBe(true);
+    expect(reading?.severe).toBe(50);
     expect(reading?.parts["front wing"]).toBe(30);
   });
 
-  test("Kunos damage never decides a pit call", () => {
-    const reading = readDamage(packet({ acc: { carDamage: { front: 0.2, rear: 0, left: 0, right: 0, centre: 0 } } as TelemetryPacket["acc"] }));
-    expect(reading?.severity).toBe(false);
-    expect(reading?.parts.front).toBeCloseTo(20);
+  test("reads ACC zones in raw units, without the centre sum", () => {
+    const reading = readDamage(packet({ acc: { carDamage: { front: 12.2, rear: 0, left: 0, right: 0, centre: 12.2 } } as TelemetryPacket["acc"] }));
+    expect(reading?.parts).toEqual({ front: 12.2, rear: 0, "left side": 0, "right side": 0 });
+    expect(reading?.step).toBe(3);
   });
 
   test("games without damage telemetry read null", () => {
@@ -87,8 +101,10 @@ describe("crash calls", () => {
     expect(call?.text).toContain("box this lap");
   });
 
-  test("heavy Kunos damage stays informative", () => {
-    expect(assessCrash(heavy, damage({ front: 0 }, false), damage({ front: 90 }, false), first)?.priority).toBe(1);
+  test("an ACC tap stays silent, real contact is informative, a wreck is a box call", () => {
+    expect(assessCrash(light, damage({ front: 0 }, 3, 60), damage({ front: 0.55 }, 3, 60), first)).toBeNull();
+    expect(assessCrash(light, damage({ rear: 0 }, 3, 60), damage({ rear: 4.3 }, 3, 60), first)?.priority).toBe(1);
+    expect(assessCrash(heavy, damage({ front: 32 }, 3, 60), damage({ front: 159 }, 3, 60), first)?.priority).toBe(2);
   });
 
   test("a puncture is always a box call", () => {
