@@ -32,6 +32,8 @@ import { isPaceLap } from "@raceiq/shared/racing/lap-classification";
 import type { LapClassification } from "@raceiq/shared/racing/lap-classification";
 import { CornerLapRecorder, groupCorners, parseTips, speechSeconds, TIP_FEEDBACK_EVERY_LAPS, tipFeedbackCallout, TipHistory, tipOutcomes, TipScheduler, type CachedTip, type CornerGroup, type CornerGroupStats } from "./co-driver";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
+import { tryGetGame } from "@raceiq/shared/games/registry";
+import { FuelTracker, fuelPlan, isRaceSession, lapsToGo, raceLength, StrategyCaller, strategyContext, worstTyre, type FuelPlan, type StrategyInput } from "./strategy";
 
 export type EngineerSessionType = "practice" | "qualifying" | "race";
 
@@ -172,6 +174,8 @@ export class EngineerService {
   /** Fastest time through each corner group this session, from clean laps. */
   private groupBestS = new Map<string, number>();
   private lapsSinceTipFeedback = TIP_FEEDBACK_EVERY_LAPS;
+  readonly fuel = new FuelTracker();
+  private readonly strategy = new StrategyCaller();
   private readonly impacts = new ImpactDetector();
   private damageHistory: { at: number; reading: DamageReading }[] = [];
   private pendingCrash: { impact: Impact; before: DamageReading | null; settleAt: number } | null = null;
@@ -196,6 +200,7 @@ export class EngineerService {
       onTelemetry: (packet, sectors, pit) => {
         if (!this.settings.engineerEnabled) return;
         this.state.update(packet, sectors, pit);
+        this.fuel.update(packet);
         this.coDriverTick(packet);
         this.crashTick(packet);
       },
@@ -251,6 +256,8 @@ export class EngineerService {
     this.bestLapCornerStats = [];
     this.dossierKey = "";
     this.sessionLaps.length = 0;
+    this.fuel.reset();
+    this.strategy.reset();
     wsManager.broadcastNotification({ type: "engineer-reset", sessionType: type });
   }
 
@@ -309,6 +316,7 @@ export class EngineerService {
         `Live data (JSON): ${JSON.stringify(this.state.snapshot())}`,
         `Session so far (JSON): ${JSON.stringify(summarizeSession(this.sessionLaps))}`,
         `Corner splits, last lap vs best lap (JSON): ${JSON.stringify(this.cornerSplits())}`,
+        `Strategy (JSON): ${JSON.stringify(this.strategyFacts())}`,
         `Engineer mode: ${this.mode}. Active callouts: ${[...this.instructions].join(", ") || "none"}.`,
         recent ? `Recent radio:\n${recent}` : "",
         `Driver: ${text}`,
@@ -367,6 +375,7 @@ export class EngineerService {
       this.sessionLaps.length = 0;
       this.bestLap = 0;
       this.lapsSinceStatus = 0;
+      this.strategy.reset();
     }
     const isValid = event.isValid !== false;
     const previousBest = this.bestLap;
@@ -378,11 +387,14 @@ export class EngineerService {
     const excluded = !isPaceLap(classification) ? `not a pace lap (${classification})` : this.crashThisLap ? "crash or heavy impact on this lap" : anomalyReason(lapTime, normalTimes);
     this.crashThisLap = false;
     this.lastLapExcluded = excluded !== null;
-    this.sessionLaps.push(lapRecordFromTally(Number(event.lapNumber) || this.sessionLaps.length + 1, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null, excluded));
+    const lapsCompleted = Number(event.lapNumber) || this.sessionLaps.length + 1;
+    this.sessionLaps.push(lapRecordFromTally(lapsCompleted, lapTime, isValid, sectorTimes, lapIssues, this.state.packet?.RacePosition || null, excluded));
+    this.fuel.lapComplete(excluded !== null);
     if (excluded) {
       // Critical calls (fuel, tyres) still matter on any lap; everything else waits for a real lap.
       const critical = lapCompleteCallouts(this.mode, { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest, pit: this.state.pit, lastLapIssues: new Map(), lapsSinceStatus: 0 }, this.rng).filter((call) => call.priority === 2);
       for (const call of critical) this.say(call);
+      this.strategyCalls(lapsCompleted, critical);
       return;
     }
     if (this.crashPaceCheck) {
@@ -405,15 +417,50 @@ export class EngineerService {
     if (isValid && (this.bestLap <= 0 || lapTime < this.bestLap)) this.bestLap = lapTime;
     if (mode !== "coach" && mode !== "co-driver") {
       for (const call of calls) this.say(call);
+      this.strategyCalls(lapsCompleted, calls);
       return;
     }
     // Coach and Co-driver: critical calls stay instant; AI replaces every other after-lap call.
     for (const call of calls) if (call.priority === 2) this.say(call);
+    this.strategyCalls(lapsCompleted, calls);
     const lap = { lapNumber: Number(event.lapNumber) || 0, lapTime, isValid, previousBest };
     // Co-driver without a corner map (or before one loads) behaves like Coach.
     const coDriver = mode === "co-driver" && this.coGroups.length > 0;
     void this.coachLap(lap, coDriver);
     if (coDriver) setTimeout(() => void this.refreshCornerTips(lap), CO_DRIVER_SETTLE_MS);
+  }
+
+  /** Typical lap time from clean laps, for turning time left into laps left. */
+  private paceS(): number | null {
+    const times = this.sessionLaps.filter((lap) => lap.valid && !lap.excluded).map((lap) => lap.timeS);
+    return times.length > 0 ? median(times) : null;
+  }
+
+  /** Fuel, tyre and pit-window picture after `lapsCompleted` laps. */
+  strategyInput(lapsCompleted: number): StrategyInput & { plan: FuelPlan | null } {
+    const packet = this.state.packet;
+    const perLap = this.fuel.perLap;
+    const fuelLeft = this.fuel.fuel;
+    const unit = (packet && tryGetGame(packet.gameId)?.telemetry.fuel.packetUnit) || null;
+    const length = packet ? raceLength(packet) : { lapsTotal: null, timeLeftS: null };
+    const capacity = packet?.FuelCapacity && Number.isFinite(packet.FuelCapacity) && packet.FuelCapacity > 0 ? packet.FuelCapacity : null;
+    const plan = perLap && fuelLeft !== null && unit ? fuelPlan(fuelLeft, perLap, lapsToGo(length, lapsCompleted, this.paceS()), unit, capacity) : null;
+    const ideal = packet?.f1?.pitStopWindowIdealLap ?? 0;
+    const pitWindow = ideal > 0 ? { idealLap: ideal, latestLap: packet?.f1?.pitStopWindowLatestLap ?? ideal } : null;
+    return { lapsCompleted, plan, tyre: worstTyre(this.state.pit), pitWindow };
+  }
+
+  /** Race only: fuel, tyre and pit-window calls when the picture changes. Quiet keeps only must-act calls. */
+  private strategyCalls(lapsCompleted: number, alreadySaid: readonly Callout[]): void {
+    if (!isRaceSession(this.state.packet, this.sessionType)) return;
+    const calls = this.strategy.afterLap(this.strategyInput(lapsCompleted), this.rng);
+    for (const call of calls) {
+      // The critical fuel or tyre call already covers it this lap.
+      if (call.key === "strategy-fuel" && alreadySaid.some((said) => said.key === "fuel-critical")) continue;
+      if (call.key === "strategy-tyres" && alreadySaid.some((said) => said.key === "tyres-critical")) continue;
+      if (call.priority < 2 && this.mode === "quiet") continue;
+      this.say(call);
+    }
   }
 
   /** Per-corner-group time on the last lap against the best lap, for questions. */
@@ -432,6 +479,13 @@ export class EngineerService {
         bestLapMinKph: ref?.minKph ?? null,
       };
     });
+  }
+
+  /** Fuel, tyres, race length and pit window for driver questions. */
+  strategyFacts(): Record<string, unknown> {
+    const input = this.strategyInput(this.sessionLaps.at(-1)?.lap ?? 0);
+    const packet = this.state.packet;
+    return strategyContext(input.plan, packet ? raceLength(packet) : { lapsTotal: null, timeLeftS: null }, input.tyre, input.pitWindow, this.fuel.cleanLaps);
   }
 
   /** End-of-session debrief with the result; template fallback if the AI fails. */

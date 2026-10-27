@@ -95,6 +95,7 @@ const EXTENSION_ALIASES: Record<string, string> = {
   "acc.penaltyType": "race.penalty-type",
   "acc.penaltyTime": "race.penalty-time",
   "acc.sessionType": "session.session-type",
+  "acc.sessionTotalLaps": "timing.total-laps",
   "acc.acEvo.airTempC": "weather.air-temp",
   "acc.acEvo.roadTempC": "weather.track-temp",
   "acc.acEvo.tyreMiddleTempC": "tire.temperature.surface.middle",

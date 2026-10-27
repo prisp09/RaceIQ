@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { emitLiveNotification } from "@raceiq/backend-core/live-engineer/tap";
+import { initGameAdapters } from "@raceiq/game-catalogs/games/init";
+import { emitLiveNotification, emitLiveTelemetry } from "@raceiq/backend-core/live-engineer/tap";
 import { loadSettings, saveSettings } from "@raceiq/backend-core/runtime/config/settings";
 import { wsManager } from "@raceiq/backend-core/runtime/websocket-manager";
 import type { TelemetryPacket } from "@raceiq/shared/telemetry/types";
@@ -245,6 +246,62 @@ describe("co-driver tip feedback", () => {
     } finally {
       wsManager.broadcastNotification = original;
       saveSettings({ ...loadSettings(), engineerMode: "normal" });
+    }
+  });
+});
+
+describe("race engineer fuel strategy", () => {
+  initGameAdapters();
+  test("in a race, estimates fuel from clean laps and answers with the plan", async () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "normal" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    let prompt = "";
+    const service = new EngineerService(async (_system, question) => { prompt = question; return "We're fine on fuel."; }, () => 0);
+    // F1 reports fuel as a fraction of the tank; 20-lap race, 4% a lap.
+    const f1 = (lap: number, fuel: number) => ({ gameId: "f1-2025", IsRaceOn: 1, LapNumber: lap, Fuel: fuel, f1: { sessionType: "race", totalLaps: 20 } }) as unknown as TelemetryPacket;
+    try {
+      service.start();
+      service.newSession("race");
+      let fuel = 0.9;
+      for (let lap = 1; lap <= 4; lap++) {
+        emitLiveTelemetry(f1(lap, fuel));
+        fuel -= 0.04;
+        emitLiveTelemetry(f1(lap, fuel));
+        emitLiveNotification({ type: "lap-saved", sessionId: 9, lapNumber: lap, lapTime: 90 + lap * 0.1, isValid: true });
+      }
+      // Lap 1 was joined part-way; laps 2 and 3 give the estimate after lap 3.
+      expect(said.filter((text) => /fuel/i.test(text))).toEqual(["Fuel for 19 more laps, 17 to go. We're fine on fuel."]);
+      await service.ask("Can we make it to the end on fuel?");
+      expect(prompt).toContain('Strategy (JSON): {"raceLength":{"laps":20},"fuel":{"unit":"fraction of tank","left":0.74,"perLap":0.04,"lapsOfFuel":18.5,"lapsToGo":16');
+    } finally {
+      service.stop();
+      wsManager.broadcastNotification = original;
+    }
+  });
+
+  test("stays quiet about fuel outside a race", () => {
+    saveSettings({ ...loadSettings(), engineerEnabled: true, engineerMode: "normal" });
+    const said: string[] = [];
+    const original = wsManager.broadcastNotification.bind(wsManager);
+    wsManager.broadcastNotification = ((event: Record<string, unknown>) => { if (event.type === "engineer-say") said.push(String(event.text)); }) as typeof wsManager.broadcastNotification;
+    const service = new EngineerService(undefined, () => 0);
+    const f1 = (lap: number, fuel: number) => ({ gameId: "f1-2025", IsRaceOn: 1, LapNumber: lap, Fuel: fuel, f1: { sessionType: "practice-1", totalLaps: 0 } }) as unknown as TelemetryPacket;
+    try {
+      service.start();
+      service.newSession("practice");
+      let fuel = 0.9;
+      for (let lap = 1; lap <= 4; lap++) {
+        emitLiveTelemetry(f1(lap, fuel));
+        fuel -= 0.04;
+        emitLiveTelemetry(f1(lap, fuel));
+        emitLiveNotification({ type: "lap-saved", sessionId: 10, lapNumber: lap, lapTime: 90, isValid: true });
+      }
+      expect(said.filter((text) => /fuel/i.test(text))).toEqual([]);
+    } finally {
+      service.stop();
+      wsManager.broadcastNotification = original;
     }
   });
 });

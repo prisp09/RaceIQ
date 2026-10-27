@@ -70,6 +70,10 @@ export interface KunosExtendedData {
   // Race state
   /** ACC session mode; absent for imports without game-reported session context. */
   sessionType?: string;
+  /** ACC Graphics.sessionTimeLeft in ms; absent for sources without this field. */
+  sessionTimeLeftMs?: number;
+  /** ACC Graphics.numberOfLaps: laps in a lap-limited session, 0 when time-limited. */
+  sessionTotalLaps?: number;
   /** ACC native penalty enum code; absent for sources without this field. */
   penalty?: number;
   /** Stable kebab-case ACC penalty label, or "unknown" for unmapped codes. */

@@ -7,8 +7,8 @@
 - Catalog version: `0.20.0`
 - Schema version: `v7`
 - Generator: `RaceIQ telemetry-catalog generator@0.20.0`
-- Generator source SHA-256: `fd03c450b03f31505862d865bb4574da2f25c6d704cd387c6cbbbfc1bb5c9472`
-- Content SHA-256: `bc7cf3258c5b61865a4db41b3cf07d2d37a5678fc8d545e4a59fecb78faec4ef`
+- Generator source SHA-256: `664b8e55cff26c2659ed9399e2bf7574df20c83136201d26f7d28823d62efa35`
+- Content SHA-256: `b098bc792ae8c0d14db5051ce1be79f8161aec56c0ecad3001ebba3f10190e4f`
 
 ## Coverage
 
@@ -16,11 +16,11 @@
 |---|---:|---:|---:|---:|---:|---:|---:|
 | fm-2023 | 96 | 96 | 95 | 1 | 0 | 0 | 0 |
 | f1-2025 | 292 | 292 | 119 | 173 | 0 | 0 | 0 |
-| acc | 205 | 172 | 124 | 48 | 0 | 0 | 33 |
-| ac-evo | 258 | 226 | 126 | 100 | 0 | 0 | 32 |
+| acc | 207 | 174 | 124 | 50 | 0 | 0 | 33 |
+| ac-evo | 260 | 228 | 126 | 102 | 0 | 0 | 32 |
 | iracing | 952 | 702 | 115 | 18 | 324 | 495 | 0 |
 | lmu | 250 | 250 | 126 | 124 | 0 | 0 | 0 |
-| ams2 | 112 | 112 | 108 | 4 | 0 | 0 | 0 |
+| ams2 | 114 | 114 | 108 | 6 | 0 | 0 | 0 |
 
 ## Semantic variables
 

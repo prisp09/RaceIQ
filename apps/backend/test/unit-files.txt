@@ -4,6 +4,7 @@ apps/backend/test/archive/bounded-unzip.test.ts
 apps/backend/test/engineer/co-driver.test.ts
 apps/backend/test/engineer/crash.test.ts
 apps/backend/test/engineer/rules.test.ts
+apps/backend/test/engineer/strategy.test.ts
 apps/backend/test/games/shared/parser.test.ts
 apps/backend/test/lap-analysis/clean-lap-aggregate.test.ts
 apps/backend/test/ai/setup-output-contract.test.ts
