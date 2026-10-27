@@ -18,6 +18,7 @@ type EngineerDraft = {
   engineerMode: NonNullable<DisplaySettings["engineerMode"]>;
   engineerMicMode: NonNullable<DisplaySettings["engineerMicMode"]>;
   engineerPushToTalk: DisplaySettings["engineerPushToTalk"] | null;
+  engineerRepeatButton: DisplaySettings["engineerRepeatButton"] | null;
   engineerVoiceURI: string | null;
   engineerVoiceRate: number;
   engineerVoicePitch: number;
@@ -38,6 +39,7 @@ function draftFrom(settings: Partial<DisplaySettings>): EngineerDraft {
     engineerMode: settings.engineerMode ?? "normal",
     engineerMicMode: settings.engineerMicMode ?? "push-to-talk",
     engineerPushToTalk: settings.engineerPushToTalk ?? null,
+    engineerRepeatButton: settings.engineerRepeatButton ?? null,
     engineerVoiceURI: settings.engineerVoiceURI ?? null,
     engineerVoiceRate: settings.engineerVoiceRate ?? 0.95,
     engineerVoicePitch: settings.engineerVoicePitch ?? 0.85,
@@ -62,7 +64,7 @@ export function AiEngineerSection() {
     setDraft(draftFrom(displaySettings as Partial<DisplaySettings>));
   }, [settingsLoaded, displaySettings]);
 
-  const [binding, setBinding] = useState(false);
+  const [binding, setBinding] = useState<"engineerPushToTalk" | "engineerRepeatButton" | null>(null);
   const [azureKey, setAzureKey] = useState("");
   const [azureKeySet, setAzureKeySet] = useState(Boolean(displaySettings.azureSpeechKeySet));
   useEffect(() => setAzureKeySet(Boolean(displaySettings.azureSpeechKeySet)), [displaySettings.azureSpeechKeySet]);
@@ -124,18 +126,18 @@ export function AiEngineerSection() {
   const selectedVoice = useMemo(() => pickVoice(draft.engineerVoiceURI), [draft.engineerVoiceURI, voices]);
   const hasBritishVoice = useMemo(() => voices.some((voice) => voice.lang.toLowerCase() === "en-gb"), [voices]);
 
-  const bind = async () => {
-    setBinding(true);
+  const bind = async (target: "engineerPushToTalk" | "engineerRepeatButton") => {
+    setBinding(target);
     setBindError(null);
     try {
       const res = await authenticatedFetch("/api/engineer/bind", { method: "POST" });
       const body = await res.json() as { binding?: EngineerDraft["engineerPushToTalk"]; error?: string };
-      if (res.ok && body.binding) update({ engineerPushToTalk: body.binding });
+      if (res.ok && body.binding) update({ [target]: body.binding });
       else setBindError(body.error ?? m.engineer_bind_failed());
     } catch {
       setBindError(m.engineer_bind_failed());
     } finally {
-      setBinding(false);
+      setBinding(null);
     }
   };
 
@@ -192,14 +194,30 @@ export function AiEngineerSection() {
               <span className="rounded border border-app-border-input bg-app-surface px-2 py-1 text-sm text-app-text">
                 {draft.engineerPushToTalk?.name ?? m.engineer_ptt_none()}
               </span>
-              <Button variant="app-outline" size="app-sm" onClick={() => void bind()} disabled={binding}>
-                {binding ? m.engineer_ptt_waiting() : m.engineer_ptt_set()}
+              <Button variant="app-outline" size="app-sm" onClick={() => void bind("engineerPushToTalk")} disabled={binding !== null}>
+                {binding === "engineerPushToTalk" ? m.engineer_ptt_waiting() : m.engineer_ptt_set()}
               </Button>
               {draft.engineerPushToTalk && (
                 <Button variant="app-ghost" size="app-sm" onClick={() => update({ engineerPushToTalk: null })}>{m.engineer_ptt_clear()}</Button>
               )}
             </div>
             <p className="mt-1 max-w-xl text-xs text-app-text-muted">{m.engineer_ptt_help()}</p>
+          </div>
+
+          <div>
+            <Label className="mb-1 block text-xs text-app-text-muted">{m.engineer_repeat_label()}</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded border border-app-border-input bg-app-surface px-2 py-1 text-sm text-app-text">
+                {draft.engineerRepeatButton?.name ?? m.engineer_ptt_none()}
+              </span>
+              <Button variant="app-outline" size="app-sm" onClick={() => void bind("engineerRepeatButton")} disabled={binding !== null}>
+                {binding === "engineerRepeatButton" ? m.engineer_ptt_waiting() : m.engineer_ptt_set()}
+              </Button>
+              {draft.engineerRepeatButton && (
+                <Button variant="app-ghost" size="app-sm" onClick={() => update({ engineerRepeatButton: null })}>{m.engineer_ptt_clear()}</Button>
+              )}
+            </div>
+            <p className="mt-1 max-w-xl text-xs text-app-text-muted">{m.engineer_repeat_help()}</p>
             {bindError && <p role="alert" className="mt-1 text-xs text-status-danger">{bindError}</p>}
           </div>
 

@@ -3056,5 +3056,8 @@
   "engineer_jump_latest": "Przejdź do najnowszych",
   "engineer_usage_cost": "AI w tej sesji: {calls} wywołań · {tokens} tokenów · około {cost} (szacunek)",
   "engineer_usage_tokens": "AI w tej sesji: {calls} wywołań · {tokens} tokenów",
-  "engineer_usage_detail": "Wejście {input}, odczyt z cache {cacheRead}, zapis do cache {cacheWrite}, wyjście {output}. Koszt to szacunek wg cennika; dla modeli bez znanej ceny liczone są tylko tokeny."
+  "engineer_usage_detail": "Wejście {input}, odczyt z cache {cacheRead}, zapis do cache {cacheWrite}, wyjście {output}. Koszt to szacunek wg cennika; dla modeli bez znanej ceny liczone są tylko tokeny.",
+  "engineer_repeat_label": "Przycisk powtórzenia ostatniej wiadomości",
+  "engineer_repeat_help": "Naciśnij podczas jazdy, aby jeszcze raz usłyszeć ostatnią wiadomość radiową. Działa, gdy gra jest aktywna, tak jak push-to-talk.",
+  "engineer_repeat_last": "Powtórz ostatnią wiadomość"
 }

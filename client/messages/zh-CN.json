@@ -3056,5 +3056,8 @@
   "engineer_jump_latest": "跳到最新",
   "engineer_usage_cost": "本次会话 AI：{calls} 次调用 · {tokens} 个令牌 · 约 {cost}（估算）",
   "engineer_usage_tokens": "本次会话 AI：{calls} 次调用 · {tokens} 个令牌",
-  "engineer_usage_detail": "输入 {input}，缓存读取 {cacheRead}，缓存写入 {cacheWrite}，输出 {output}。费用按公开价格估算；价格未知的模型只显示令牌数。"
+  "engineer_usage_detail": "输入 {input}，缓存读取 {cacheRead}，缓存写入 {cacheWrite}，输出 {output}。费用按公开价格估算；价格未知的模型只显示令牌数。",
+  "engineer_repeat_label": "重复上一条消息按钮",
+  "engineer_repeat_help": "驾驶时按下即可再次收听上一条无线电消息。与按键通话一样，在游戏处于前台时也可使用。",
+  "engineer_repeat_last": "重复上一条消息"
 }

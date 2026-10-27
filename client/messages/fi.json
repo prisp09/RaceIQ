@@ -3057,5 +3057,8 @@
   "engineer_jump_latest": "Siirry uusimpaan",
   "engineer_usage_cost": "Tekoäly tässä sessiossa: {calls} kutsua · {tokens} tokenia · noin {cost} (arvio)",
   "engineer_usage_tokens": "Tekoäly tässä sessiossa: {calls} kutsua · {tokens} tokenia",
-  "engineer_usage_detail": "Syöte {input}, välimuistista luettu {cacheRead}, välimuistiin kirjoitettu {cacheWrite}, tuloste {output}. Kustannus on arvio listahinnoista; malleille ilman tunnettua hintaa näytetään vain tokenit."
+  "engineer_usage_detail": "Syöte {input}, välimuistista luettu {cacheRead}, välimuistiin kirjoitettu {cacheWrite}, tuloste {output}. Kustannus on arvio listahinnoista; malleille ilman tunnettua hintaa näytetään vain tokenit.",
+  "engineer_repeat_label": "Toista viimeisin viesti -painike",
+  "engineer_repeat_help": "Paina ajon aikana kuullaksesi viimeisimmän radioviestin uudelleen. Toimii pelin ollessa aktiivisena, kuten puhepainike.",
+  "engineer_repeat_last": "Toista viimeisin viesti"
 }

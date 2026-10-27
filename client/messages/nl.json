@@ -3056,5 +3056,8 @@
   "engineer_jump_latest": "Naar nieuwste",
   "engineer_usage_cost": "AI deze sessie: {calls} aanroepen · {tokens} tokens · ongeveer {cost} (schatting)",
   "engineer_usage_tokens": "AI deze sessie: {calls} aanroepen · {tokens} tokens",
-  "engineer_usage_detail": "Invoer {input}, cache gelezen {cacheRead}, cache geschreven {cacheWrite}, uitvoer {output}. De kosten zijn een schatting op basis van lijstprijzen; modellen zonder bekende prijs tellen alleen tokens."
+  "engineer_usage_detail": "Invoer {input}, cache gelezen {cacheRead}, cache geschreven {cacheWrite}, uitvoer {output}. De kosten zijn een schatting op basis van lijstprijzen; modellen zonder bekende prijs tellen alleen tokens.",
+  "engineer_repeat_label": "Knop laatste bericht herhalen",
+  "engineer_repeat_help": "Druk erop tijdens het rijden om het laatste radiobericht nog eens te horen. Werkt terwijl de game focus heeft, net als push-to-talk.",
+  "engineer_repeat_last": "Laatste bericht herhalen"
 }

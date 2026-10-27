@@ -44,6 +44,7 @@ export interface DisplaySettings {
   azureSpeechKeySet?: boolean;
   engineerMicMode?: "push-to-talk" | "open-mic" | "off";
   engineerPushToTalk?: { kind: "keyboard"; vk: number; name: string } | { kind: "joystick"; deviceId: number; button: number; name: string } | null;
+  engineerRepeatButton?: { kind: "keyboard"; vk: number; name: string } | { kind: "joystick"; deviceId: number; button: number; name: string } | null;
   engineerVoiceURI?: string | null;
   engineerVoiceRate?: number;
   engineerVoicePitch?: number;

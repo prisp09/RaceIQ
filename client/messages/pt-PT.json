@@ -3056,5 +3056,8 @@
   "engineer_jump_latest": "Ir para o mais recente",
   "engineer_usage_cost": "IA nesta sessão: {calls} chamadas · {tokens} tokens · cerca de {cost} (estimativa)",
   "engineer_usage_tokens": "IA nesta sessão: {calls} chamadas · {tokens} tokens",
-  "engineer_usage_detail": "Entrada {input}, leitura de cache {cacheRead}, escrita de cache {cacheWrite}, saída {output}. O custo é uma estimativa pelos preços de tabela; modelos sem preço conhecido contam apenas tokens."
+  "engineer_usage_detail": "Entrada {input}, leitura de cache {cacheRead}, escrita de cache {cacheWrite}, saída {output}. O custo é uma estimativa pelos preços de tabela; modelos sem preço conhecido contam apenas tokens.",
+  "engineer_repeat_label": "Botão repetir última mensagem",
+  "engineer_repeat_help": "Carregue enquanto conduz para voltar a ouvir a última mensagem de rádio. Funciona com o jogo em foco, como o premir para falar.",
+  "engineer_repeat_last": "Repetir última mensagem"
 }

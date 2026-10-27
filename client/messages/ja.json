@@ -3056,5 +3056,8 @@
   "engineer_jump_latest": "最新へ移動",
   "engineer_usage_cost": "このセッションのAI: {calls}回の呼び出し · {tokens}トークン · 約{cost}（概算）",
   "engineer_usage_tokens": "このセッションのAI: {calls}回の呼び出し · {tokens}トークン",
-  "engineer_usage_detail": "入力 {input}、キャッシュ読み取り {cacheRead}、キャッシュ書き込み {cacheWrite}、出力 {output}。費用は公開価格による概算です。価格が不明なモデルはトークン数のみ表示します。"
+  "engineer_usage_detail": "入力 {input}、キャッシュ読み取り {cacheRead}、キャッシュ書き込み {cacheWrite}、出力 {output}。費用は公開価格による概算です。価格が不明なモデルはトークン数のみ表示します。",
+  "engineer_repeat_label": "最後のメッセージを繰り返すボタン",
+  "engineer_repeat_help": "走行中に押すと、最後の無線メッセージをもう一度聞けます。プッシュトゥトークと同じく、ゲームがフォーカス中でも使えます。",
+  "engineer_repeat_last": "最後のメッセージを繰り返す"
 }
