@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { AlertTriangle, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,26 +67,17 @@ function useRecordingSessionLabels(recordings: ClassificationMigrationRecording[
 export function ClassificationMigrationDock({ suppressed = false }: { suppressed?: boolean }) {
   const status = useClassificationMigration((state) => state.status);
   const dismissed = useClassificationMigration((state) => state.dismissedRevision);
-  // Closing while running hides the card for the rest of the run (revision changes as recordings finish),
-  // then dismisses its final summary; the classification keeps going in the background.
-  const [hiddenWhileRunning, setHiddenWhileRunning] = useState(false);
   const running = status?.status === "running";
-  const terminal = status?.status === "complete" || status?.status === "attention";
-  useEffect(() => {
-    if (hiddenWhileRunning && terminal && status) {
-      classificationMigrationActions.dismiss(status.revision);
-      setHiddenWhileRunning(false);
-    }
-  }, [hiddenWhileRunning, terminal, status]);
-  if (suppressed || !status || status.status === "idle" || (!running && terminal && dismissed === status.revision) || (!terminal && hiddenWhileRunning)) return null;
-  return <Dialog open modal={false} onOpenChange={(open) => { if (!open && terminal) classificationMigrationActions.dismiss(status.revision); }}>
+  if (suppressed || !status || status.status === "idle" || dismissed === status.revision) return null;
+  const updatingSummaries = running && status.pending + status.running === 0 && status.aggregatesPending;
+  return <Dialog open modal={false} onOpenChange={(open) => { if (!open) classificationMigrationActions.dismiss(status.revision); }}>
     <DialogContent size="sm" layout="scrollable" showCloseButton={false} overlayClassName="hidden" className="top-auto left-auto right-4 bottom-20 w-[min(24rem,calc(100%-2rem))] max-h-[min(70dvh,32rem)] translate-x-0 translate-y-0 gap-3 rounded-lg p-4" aria-label={m.classification_migration_title()}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           {status.status === "attention" ? <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 text-status-warning" /> : status.status === "complete" ? <Check aria-hidden="true" className="mt-0.5 size-4 text-status-success" /> : null}
-          <div><DialogTitle className="text-sm font-semibold">{m.classification_migration_title()}</DialogTitle><DialogDescription role="status" className="mt-1 text-xs text-app-text-muted">{running ? m.classification_migration_historical_caveat() : status.status === "complete" ? m.classification_migration_complete() : m.classification_migration_attention()}</DialogDescription></div>
+          <div><DialogTitle className="text-sm font-semibold">{m.classification_migration_title()}</DialogTitle><DialogDescription role="status" className="mt-1 text-xs text-app-text-muted">{updatingSummaries ? m.classification_migration_aggregates_pending() : running ? m.classification_migration_historical_caveat() : status.status === "complete" ? m.classification_migration_complete() : m.classification_migration_attention()}</DialogDescription></div>
         </div>
-        <Button type="button" variant="app-ghost" size="icon-sm" aria-label={m.common_close()} onClick={() => terminal ? classificationMigrationActions.dismiss(status.revision) : setHiddenWhileRunning(true)}><X aria-hidden="true" className="size-4" /></Button>
+        <Button type="button" variant="app-ghost" size="icon-sm" aria-label={m.common_close()} onClick={() => classificationMigrationActions.dismiss(status.revision)}><X aria-hidden="true" className="size-4" /></Button>
       </div>
       <p className="text-xs text-app-text-secondary">{m.classification_migration_counts({ completed: status.completed, pending: status.pending + status.running, limited: status.limited, failed: status.failed })}</p>
     </DialogContent>
